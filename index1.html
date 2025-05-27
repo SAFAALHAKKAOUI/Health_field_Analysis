@@ -1,0 +1,1016 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Indicators</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@1.2.1/dist/chartjs-plugin-zoom.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <style>
+        :root {
+            --primary-color: #1a3c87;
+            --secondary-color: #2a5db0;
+            --accent-color: #ff8c38;
+            --light-blue: #e6f0ff;
+            --dark-blue: #0d2b6b;
+            --text-color: #333;
+            --light-text: #f8f9fa;
+            --background-color: #f5f7fa;
+            --card-bg: #ffffff;
+            --shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+            --transition: all 0.3s ease;
+            --dark-bg: #1e1e2f;
+            --dark-text: #e0e0e0;
+            --dark-card-bg: #2a2a3d;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: var(--background-color);
+            color: var(--text-color);
+            line-height: 1.6;
+            transition: var(--transition);
+        }
+
+        body.dark-mode {
+            background-color: var(--dark-bg);
+            color: var(--dark-text);
+        }
+
+        body.dark-mode .card {
+            background-color: var(--dark-card-bg);
+        }
+
+        .app-container {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        .sidebar {
+            width: 280px;
+            background: linear-gradient(180deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+            color: var(--light-text);
+            padding: 2rem 1.5rem;
+            position: fixed;
+            height: 100vh;
+            transition: var(--transition);
+            z-index: 100;
+            box-shadow: 2px 0 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .sidebar.collapsed {
+            width: 80px;
+        }
+
+        .sidebar-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 2rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .sidebar-header i {
+            font-size: 1.8rem;
+            margin-right: 0.8rem;
+            color: var(--accent-color);
+        }
+
+        .sidebar h2 {
+            font-size: 1.4rem;
+            font-weight: 600;
+            margin: 0;
+            transition: var(--transition);
+        }
+
+        .sidebar.collapsed h2 {
+            display: none;
+        }
+
+        .indicator-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            max-height: 70vh;
+            overflow-y: auto;
+            scrollbar-width: thin;
+            scrollbar-color: var(--light-text) var(--primary-color);
+        }
+
+        .indicator-list::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .indicator-list::-webkit-scrollbar-track {
+            background: var(--primary-color);
+        }
+
+        .indicator-list::-webkit-scrollbar-thumb {
+            background-color: var(--light-text);
+            border-radius: 4px;
+            border: 2px solid var(--primary-color);
+        }
+
+        .indicator-list::-webkit-scrollbar-thumb:hover {
+            background-color: var(--accent-color);
+        }
+
+        .indicator-list li {
+            margin-bottom: 1rem;
+        }
+
+        .indicator-list button {
+            width: 100%;
+            padding: 0.8rem 1rem;
+            text-align: left;
+            background-color: rgba(255, 255, 255, 0.1);
+            color: var(--light-text);
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+        }
+
+        .indicator-list button:hover {
+            background-color: rgba(255, 255, 255, 0.3);
+        }
+
+        .indicator-list button.active {
+            background-color: var(--accent-color);
+            font-weight: 600;
+        }
+
+        .indicator-list button i {
+            margin-right: 0.8rem;
+        }
+
+        .sidebar.collapsed .indicator-list button span {
+            display: none;
+        }
+
+        .sidebar-toggle {
+            position: absolute;
+            top: 1rem;
+            right: -40px;
+            background: var(--accent-color);
+            border: none;
+            color: white;
+            padding: 0.5rem;
+            border-radius: 0 8px 8px 0;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .sidebar.collapsed .sidebar-toggle {
+            right: -40px;
+        }
+
+        .main-content {
+            flex: 1;
+            margin-left: 280px;
+            padding: 2rem;
+            transition: var(--transition);
+            width: calc(100% - 280px);
+        }
+
+        .main-content.collapsed {
+            margin-left: 80px;
+            width: calc(100% - 80px);
+        }
+
+        .dashboard-header {
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+            color: white;
+            border-radius: 12px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: var(--shadow);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .dashboard-header::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -50%;
+            width: 100%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, transparent 70%);
+            transform: rotate(30deg);
+        }
+
+        .dashboard-header h1 {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            position: relative;
+        }
+
+        .dashboard-header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+            margin-bottom: 0;
+            position: relative;
+        }
+
+        .card {
+            background-color: var(--card-bg);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            box-shadow: var(--shadow);
+            transition: var(--transition);
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            padding-bottom: 0.8rem;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+        }
+
+        .card h2 {
+            color: var(--primary-color);
+            font-size: 1.4rem;
+            font-weight: 600;
+            margin: 0;
+        }
+
+        .card-icon {
+            color: var(--accent-color);
+            font-size: 1.5rem;
+        }
+
+        .chart-container {
+            position: relative;
+            height: 400px;
+            width: 100%;
+        }
+
+        .definition-section {
+            background: linear-gradient(to right, rgba(248, 251, 255, 0.8) 0%, rgba(248, 251, 255, 0.9) 100%);
+            border-left: 4px solid var(--accent-color);
+        }
+
+        .definition-content {
+            font-size: 1.1rem;
+            color: #555;
+        }
+
+        .metadata-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+        }
+
+        .metadata-table th {
+            background-color: var(--light-blue);
+            color: var(--primary-color);
+            font-weight: 600;
+            padding: 1rem;
+            text-align: left;
+            border-bottom: 2px solid var(--secondary-color);
+        }
+
+        .metadata-table td {
+            padding: 1rem;
+            border-bottom: 1px solid #e0e7ff;
+        }
+
+        .metadata-table tr:hover {
+            background-color: rgba(230, 240, 255, 0.5);
+        }
+
+        .value-cell {
+            font-weight: 600;
+            color: var(--secondary-color);
+        }
+
+        .control-panel {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .control-panel button,
+        .control-panel select {
+            padding: 0.8rem 1.5rem;
+            border: none;
+            border-radius: 8px;
+            background-color: var(--accent-color);
+            color: white;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .control-panel button:hover,
+        .control-panel select:hover {
+            filter: brightness(90%);
+        }
+
+        @media (max-width: 992px) {
+            .sidebar {
+                width: 250px;
+            }
+
+            .main-content {
+                margin-left: 250px;
+                width: calc(100% - 250px);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .app-container {
+                flex-direction: column;
+            }
+
+            .sidebar {
+                width: 100%;
+                height: auto;
+                position: static;
+                padding: 1.5rem;
+            }
+
+            .indicator-list {
+                max-height: 50vh;
+            }
+
+            .main-content {
+                margin-left: 0;
+                padding: 1.5rem;
+                width: 100%;
+            }
+
+            .dashboard-header h1 {
+                font-size: 1.6rem;
+            }
+
+            .chart-container {
+                height: 300px;
+            }
+
+            .control-panel {
+                flex-direction: column;
+            }
+        }
+
+        @media (max-width: 576px) {
+            .metadata-table {
+                display: block;
+                overflow-x: auto;
+            }
+
+            .card {
+                padding: 1rem;
+            }
+
+            .card h2 {
+                font-size: 1.2rem;
+            }
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .fade-in {
+            animation: fadeIn 0.6s ease forwards;
+        }
+
+        .loading {
+            position: relative;
+            overflow: hidden;
+        }
+
+        .loading::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.6), transparent);
+            animation: loading 1.5s infinite;
+        }
+
+        @keyframes loading {
+            0% {
+                transform: translateX(-100%);
+            }
+
+            100% {
+                transform: translateX(100%);
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="app-container">
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <i class="fas fa-chart-line"></i>
+                <h2 id="sidebar-title">Dashboard</h2>
+            </div>
+            <div class="indicator-list" id="indicator-list">
+                <li><button data-indicator="life_expectancy_male" class="active"><i class="fas fa-male"></i><span
+                            id="indicator-life-expectancy-male">Life Expectancy (Men)</span></button></li>
+                <li><button data-indicator="infant_mortality_rate"><i class="fas fa-baby"></i><span
+                            id="indicator-infant-mortality-rate">Infant Mortality Rate</span></button></li>
+                <li><button data-indicator="adult_mortality_rate"><i class="fas fa-user-md"></i><span
+                            id="indicator-adult-mortality-rate">Life Expectancy at Maturity</span></button></li>
+                <li><button data-indicator="SH.DYN.AIDS.ZS"><i class="fas fa-virus"></i><span
+                            id="indicator-hiv-prevalence">HIV Prevalence (%)</span></button></li>
+                <li><button data-indicator="SH.DYN.MORT"><i class="fas fa-heartbeat"></i><span
+                            id="indicator-mortality-rate">Mortality Rate</span></button></li>
+                <li><button data-indicator="SH.H2O.SMDW.ZS"><i class="fas fa-tint"></i><span
+                            id="indicator-water-access">Access to Safe Drinking Water (%)</span></button></li>
+                <li><button data-indicator="SH.IMM.MEAS"><i class="fas fa-syringe"></i><span
+                            id="indicator-measles-vaccination">Measles Vaccination (%)</span></button></li>
+                <li><button data-indicator="SH.MED.BEDS.ZS"><i class="fas fa-bed"></i><span
+                            id="indicator-hospital-beds">Hospital Beds (per 1000)</span></button></li>
+                <li><button data-indicator="SH.MED.PHYS.ZS"><i class="fas fa-user-md"></i><span
+                            id="indicator-physicians">Physicians (per 1000)</span></button></li>
+                <li><button data-indicator="SH.STA.ACSN"><i class="fas fa-shield-alt"></i><span
+                            id="indicator-health-access">Access to Health Services</span></button></li>
+                <li><button data-indicator="SH.STA.ACSN.RU"><i class="fas fa-shield-alt"></i><span
+                            id="indicator-health-access-rural">Access to Health Services (Rural)</span></button></li>
+                <li><button data-indicator="SH.STA.ACSN.UR"><i class="fas fa-shield-alt"></i><span
+                            id="indicator-health-access-urban">Access to Health Services (Urban)</span></button></li>
+                <li><button data-indicator="SH.STA.BRTC.ZS"><i class="fas fa-birthday-cake"></i><span
+                            id="indicator-birth-rate">Birth Rate (%)</span></button></li>
+                <li><button data-indicator="SH.STA.MALN.ZS"><i class="fas fa-utensils"></i><span
+                            id="indicator-malnutrition">Malnutrition (%)</span></button></li>
+                <li><button data-indicator="SH.STA.STNT.ZS"><i class="fas fa-child"></i><span
+                            id="indicator-stunting">Stunting (%)</span></button></li>
+                <li><button data-indicator="SH.STA.BASS.ZS"><i class="fas fa-toilet"></i><span
+                            id="indicator-basic-sanitation">Access to Basic Sanitation (%)</span></button></li>
+                <li><button data-indicator="SH.STA.HYGN.ZS"><i class="fas fa-hands-wash"></i><span
+                            id="indicator-hygiene">Access to Hygiene (%)</span></button></li>
+                <li><button data-indicator="SH.STA.HYGN.RU"><i class="fas fa-hands-wash"></i><span
+                            id="indicator-hygiene-rural">Access to Hygiene (Rural) (%)</span></button></li>
+                <li><button data-indicator="SH.STA.HYGN.UR"><i class="fas fa-hands-wash"></i><span
+                            id="indicator-hygiene-urban">Access to Hygiene (Urban) (%)</span></button></li>
+                <li><button data-indicator="SH.STA.WASH.ZS"><i class="fas fa-shower"></i><span
+                            id="indicator-wash">Water, Sanitation, and Hygiene (%)</span></button></li>
+            </div>
+            <button class="sidebar-toggle"><i class="fas fa-chevron-left"></i></button>
+        </aside>
+
+        <main class="main-content">
+            <div class="control-panel">
+                <button id="export-button" onclick="exportData()">Export to Excel</button>
+                <button id="dark-mode-button" onclick="toggleDarkMode()">Toggle Dark Mode</button>
+                <select id="language-select" onchange="changeLanguage()">
+                    <option value="en">English</option>
+                    <option value="fr">Français</option>
+                </select>
+            </div>
+            <header class="dashboard-header fade-in">
+                <h1 id="dashboard-title">Dashboard: Life Expectancy at Birth (Men)</h1>
+                <p id="dashboard-subtitle">Comparison between Morocco, MENA Region, and World (2020-2023)</p>
+            </header>
+
+            <section class="card fade-in">
+                <div class="card-header">
+                    <h2 id="chart-title">Evolution of Life Expectancy</h2>
+                    <i class="fas fa-chart-area card-icon"></i>
+                </div>
+                <div class="chart-container">
+                    <canvas id="indicatorChart"></canvas>
+                </div>
+            </section>
+
+            <section class="card definition-section fade-in">
+                <div class="card-header">
+                    <h2 id="definition-title">Indicator Definition</h2>
+                    <i class="fas fa-info-circle card-icon"></i>
+                </div>
+                <div class="definition-content">
+                    <p id="indicator-definition" class="loading">Loading definition...</p>
+                </div>
+            </section>
+
+            <section class="card fade-in">
+                <div class="card-header">
+                    <h2 id="metadata-title">Metadata</h2>
+                    <i class="fas fa-table card-icon"></i>
+                </div>
+                <div class="table-responsive">
+                    <table class="metadata-table">
+                        <thead>
+                            <tr>
+                                <th id="table-country">Country/Region</th>
+                                <th id="table-recent-year">Recent Year</th>
+                                <th id="table-recent-value">Recent Value</th>
+                                <th id="table-source">Source</th>
+                                <th id="table-last-update">Last Update</th>
+                            </tr>
+                        </thead>
+                        <tbody id="metadata-table-body">
+                            <tr>
+                                <td>Morocco</td>
+                                <td>2023</td>
+                                <td class="value-cell" id="maroc-recent-value">73.00</td>
+                                <td id="maroc-source">Loading...</td>
+                                <td id="maroc-last-update">Loading...</td>
+                            </tr>
+                            <tr>
+                                <td>MENA Region</td>
+                                <td>2023</td>
+                                <td class="value-cell" id="mena-recent-value">73.00</td>
+                                <td id="mena-source">Loading...</td>
+                                <td id="mena-last-update">Loading...</td>
+                            </tr>
+                            <tr>
+                                <td>World</td>
+                                <td>2023</td>
+                                <td class="value-cell" id="world-recent-value">71.00</td>
+                                <td id="world-source">Loading...</td>
+                                <td id="world-last-update">Loading...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script>
+        let chartInstance = null;
+        let currentIndicator = 'life_expectancy_male';
+        let isDarkMode = false;
+        let currentData = null;
+        let currentLanguage = 'en';
+
+        const indicatorTranslationKeys = {
+            'life_expectancy_male': 'LifeExpectancyMale',
+            'infant_mortality_rate': 'InfantMortalityRate',
+            'adult_mortality_rate': 'AdultMortalityRate',
+            'SH.DYN.AIDS.ZS': 'HIVPrevalence',
+            'SH.DYN.MORT': 'MortalityRate',
+            'SH.H2O.SMDW.ZS': 'WaterAccess',
+            'SH.IMM.MEAS': 'MeaslesVaccination',
+            'SH.MED.BEDS.ZS': 'HospitalBeds',
+            'SH.MED.PHYS.ZS': 'Physicians',
+            'SH.STA.ACSN': 'HealthAccess',
+            'SH.STA.ACSN.RU': 'HealthAccessRural',
+            'SH.STA.ACSN.UR': 'HealthAccessUrban',
+            'SH.STA.BRTC.ZS': 'BirthRate',
+            'SH.STA.MALN.ZS': 'Malnutrition',
+            'SH.STA.STNT.ZS': 'Stunting',
+            'SH.STA.BASS.ZS': 'BasicSanitation',
+            'SH.STA.HYGN.ZS': 'Hygiene',
+            'SH.STA.HYGN.RU': 'HygieneRural',
+            'SH.STA.HYGN.UR': 'HygieneUrban',
+            'SH.STA.WASH.ZS': 'Wash'
+        };
+
+        const translations = {
+            en: {
+                sidebarTitle: 'Dashboard',
+                indicatorLifeExpectancyMale: 'Life Expectancy (Men)',
+                indicatorInfantMortalityRate: 'Infant Mortality Rate',
+                indicatorAdultMortalityRate: 'Life Expectancy at Maturity',
+                indicatorHIVPrevalence: 'HIV Prevalence (%)',
+                indicatorMortalityRate: 'Mortality Rate',
+                indicatorWaterAccess: 'Access to Safe Drinking Water (%)',
+                indicatorMeaslesVaccination: 'Measles Vaccination (%)',
+                indicatorHospitalBeds: 'Hospital Beds (per 1000)',
+                indicatorPhysicians: 'Physicians (per 1000)',
+                indicatorHealthAccess: 'Access to Health Services',
+                indicatorHealthAccessRural: 'Access to Health Services (Rural)',
+                indicatorHealthAccessUrban: 'Access to Health Services (Urban)',
+                indicatorBirthRate: 'Birth Rate (%)',
+                indicatorMalnutrition: 'Malnutrition (%)',
+                indicatorStunting: 'Stunting (%)',
+                indicatorBasicSanitation: 'Access to Basic Sanitation (%)',
+                indicatorHygiene: 'Access to Hygiene (%)',
+                indicatorHygieneRural: 'Access to Hygiene (Rural) (%)',
+                indicatorHygieneUrban: 'Access to Hygiene (Urban) (%)',
+                indicatorWash: 'Water, Sanitation, and Hygiene (%)',
+                exportButton: 'Export to Excel',
+                darkModeButton: 'Toggle Dark Mode',
+                dashboardTitle: 'Dashboard: Life Expectancy at Birth (Men)',
+                dashboardSubtitle: 'Comparison between Morocco, MENA Region, and World (2020-2023)',
+                chartTitle: 'Evolution of Life Expectancy',
+                definitionTitle: 'Indicator Definition',
+                indicatorDefinitionLoading: 'Loading definition...',
+                indicatorDefinitionNotAvailable: 'Definition not available.',
+                metadataTitle: 'Metadata',
+                tableCountry: 'Country/Region',
+                tableRecentYear: 'Recent Year',
+                tableRecentValue: 'Recent Value',
+                tableSource: 'Source',
+                tableLastUpdate: 'Last Update',
+                indicatorDefinitionError: 'Error loading data: ',
+                exportAlert: 'No data to export.',
+                yearLabel: 'Year',
+                yAxisLabelLifeExpectancyMale: 'Life Expectancy (years)',
+                yAxisLabelInfantMortalityRate: 'Rate (per 1000 births)',
+                yAxisLabelAdultMortalityRate: 'Life Expectancy (years)',
+                yAxisLabelHIVPrevalence: 'Prevalence (%)',
+                yAxisLabelMortalityRate: 'Rate (per 1000)',
+                yAxisLabelWaterAccess: 'Access (%)',
+                yAxisLabelMeaslesVaccination: 'Vaccination (%)',
+                yAxisLabelHospitalBeds: 'Beds (per 1000)',
+                yAxisLabelPhysicians: 'Physicians (per 1000)',
+                yAxisLabelHealthAccess: 'Access (index)',
+                yAxisLabelHealthAccessRural: 'Access (index)',
+                yAxisLabelHealthAccessUrban: 'Access (index)',
+                yAxisLabelBirthRate: 'Rate (%)',
+                yAxisLabelMalnutrition: 'Prevalence (%)',
+                yAxisLabelStunting: 'Prevalence (%)',
+                yAxisLabelBasicSanitation: 'Access (%)',
+                yAxisLabelHygiene: 'Access (%)',
+                yAxisLabelHygieneRural: 'Access (%)',
+                yAxisLabelHygieneUrban: 'Access (%)',
+                yAxisLabelWash: 'Access (%)',
+                definitionLifeExpectancyMale: 'Life expectancy at birth indicates the number of years a newborn infant would live if prevailing patterns of mortality at the time of its birth were to stay the same throughout its life.',
+                definitionInfantMortalityRate: 'Infant mortality rate is the number of infants dying before reaching one year of age, per 1,000 live births in a given year.',
+                definitionAdultMortalityRate: 'Adult mortality rate is the probability of dying between the ages of 15 and 60—that is, the probability of a 15-year-old dying before reaching age 60, if subject to current age-specific mortality rates between those ages.',
+                definitionHIVPrevalence: 'Prevalence of HIV refers to the percentage of people ages 15-49 who are infected with HIV.',
+                definitionMortalityRate: 'Mortality rate is the number of deaths per 1,000 individuals per year.',
+                definitionWaterAccess: 'Access to safe drinking water refers to the percentage of the population with access to safely managed drinking water services.',
+                definitionMeaslesVaccination: 'Measles vaccination coverage refers to the percentage of children ages 12-23 months who received the measles vaccine.',
+                definitionHospitalBeds: 'Hospital beds include inpatient beds available in public, private, general, and specialized hospitals and rehabilitation centers, measured per 1,000 people.',
+                definitionPhysicians: 'Physicians include generalist and specialist medical doctors, measured per 1,000 people.',
+                definitionHealthAccess: 'Access to health services measures the coverage of essential health services based on an index.',
+                definitionHealthAccessRural: 'Access to health services (rural) measures the coverage of essential health services in rural areas based on an index.',
+                definitionHealthAccessUrban: 'Access to health services (urban) measures the coverage of essential health services in urban areas based on an index.',
+                definitionBirthRate: 'Birth rate refers to the percentage of births attended by skilled health personnel.',
+                definitionMalnutrition: 'Malnutrition prevalence refers to the percentage of children under 5 who are malnourished.',
+                definitionStunting: 'Stunting prevalence refers to the percentage of children under 5 who are stunted (low height-for-age).',
+                definitionBasicSanitation: 'Access to basic sanitation refers to the percentage of the population with access to basic sanitation services.',
+                definitionHygiene: 'Access to hygiene refers to the percentage of the population with access to basic hygiene facilities.',
+                definitionHygieneRural: 'Access to hygiene (rural) refers to the percentage of the rural population with access to basic hygiene facilities.',
+                definitionHygieneUrban: 'Access to hygiene (urban) refers to the percentage of the urban population with access to basic hygiene facilities.',
+                definitionWash: 'Water, sanitation, and hygiene (WASH) refers to the percentage of the population with access to improved water, sanitation, and hygiene facilities.'
+            },
+            fr: {
+                sidebarTitle: 'Tableau de bord',
+                indicatorLifeExpectancyMale: 'Espérance de vie (Hommes)',
+                indicatorInfantMortalityRate: 'Taux de mortalité infantile',
+                indicatorAdultMortalityRate: 'Espérance de vie à la maturité',
+                indicatorHIVPrevalence: 'Prévalence VIH (%)',
+                indicatorMortalityRate: 'Taux de mortalité',
+                indicatorWaterAccess: 'Accès à l\'eau potable sûre (%)',
+                indicatorMeaslesVaccination: 'Vaccination rougeole (%)',
+                indicatorHospitalBeds: 'Lits d\'hôpital (pour 1000)',
+                indicatorPhysicians: 'Médecins (pour 1000)',
+                indicatorHealthAccess: 'Accès aux services de santé',
+                indicatorHealthAccessRural: 'Accès aux services de santé (rural)',
+                indicatorHealthAccessUrban: 'Accès aux services de santé (urbain)',
+                indicatorBirthRate: 'Taux de natalité (%)',
+                indicatorMalnutrition: 'Malnutrition (%)',
+                indicatorStunting: 'Retard de croissance (%)',
+                indicatorBasicSanitation: 'Accès à l\'assainissement de base (%)',
+                indicatorHygiene: 'Accès à l\'hygiène (%)',
+                indicatorHygieneRural: 'Accès à l\'hygiène (rural) (%)',
+                indicatorHygieneUrban: 'Accès à l\'hygiène (urbain) (%)',
+                indicatorWash: 'Eau, assainissement et hygiène (%)',
+                exportButton: 'Exporter en Excel',
+                darkModeButton: 'Basculer mode sombre',
+                dashboardTitle: 'Tableau de bord : Espérance de vie à la naissance (Hommes)',
+                dashboardSubtitle: 'Comparaison entre le Maroc, la région MENA et le Monde (2020-2023)',
+                chartTitle: 'Évolution de l\'espérance de vie',
+                definitionTitle: 'Définition de l\'indicateur',
+                indicatorDefinitionLoading: 'Chargement de la définition...',
+                indicatorDefinitionNotAvailable: 'Définition non disponible.',
+                metadataTitle: 'Métadonnées',
+                tableCountry: 'Pays/Région',
+                tableRecentYear: 'Année récente',
+                tableRecentValue: 'Valeur récente',
+                tableSource: 'Source',
+                tableLastUpdate: 'Dernière mise à jour',
+                indicatorDefinitionError: 'Erreur lors du chargement des données : ',
+                exportAlert: 'Aucune donnée à exporter.',
+                yearLabel: 'Année',
+                yAxisLabelLifeExpectancyMale: 'Espérance de vie (années)',
+                yAxisLabelInfantMortalityRate: 'Taux (pour 1000 naissances)',
+                yAxisLabelAdultMortalityRate: 'Espérance de vie (années)',
+                yAxisLabelHIVPrevalence: 'Prévalence (%)',
+                yAxisLabelMortalityRate: 'Taux (pour 1000)',
+                yAxisLabelWaterAccess: 'Accès (%)',
+                yAxisLabelMeaslesVaccination: 'Vaccination (%)',
+                yAxisLabelHospitalBeds: 'Lits (pour 1000)',
+                yAxisLabelPhysicians: 'Médecins (pour 1000)',
+                yAxisLabelHealthAccess: 'Accès (index)',
+                yAxisLabelHealthAccessRural: 'Accès (index)',
+                yAxisLabelHealthAccessUrban: 'Accès (index)',
+                yAxisLabelBirthRate: 'Taux (%)',
+                yAxisLabelMalnutrition: 'Prévalence (%)',
+                yAxisLabelStunting: 'Prévalence (%)',
+                yAxisLabelBasicSanitation: 'Accès (%)',
+                yAxisLabelHygiene: 'Accès (%)',
+                yAxisLabelHygieneRural: 'Accès (%)',
+                yAxisLabelHygieneUrban: 'Accès (%)',
+                yAxisLabelWash: 'Accès (%)',
+                definitionLifeExpectancyMale: 'L\'espérance de vie à la naissance indique le nombre d\'années qu\'un nouveau-né vivrait si les modèles de mortalité actuels à sa naissance restaient les mêmes tout au long de sa vie.',
+                definitionInfantMortalityRate: 'Le taux de mortalité infantile est le nombre de nourrissons décédant avant d\'atteindre un an, pour 1 000 naissances vivantes dans une année donnée.',
+                definitionAdultMortalityRate: 'Le taux de mortalité adulte est la probabilité de mourir entre 15 et 60 ans, c\'est-à-dire la probabilité qu\'une personne de 15 ans meure avant d\'atteindre 60 ans, si elle est soumise aux taux de mortalité spécifiques à l\'âge actuels entre ces âges.',
+                definitionHIVPrevalence: 'La prévalence du VIH désigne le pourcentage de personnes âgées de 15 à 49 ans qui sont infectées par le VIH.',
+                definitionMortalityRate: 'Le taux de mortalité est le nombre de décès pour 1 000 individus par an.',
+                definitionWaterAccess: 'L\'accès à l\'eau potable sûre désigne le pourcentage de la population ayant accès à des services d\'eau potable gérés en toute sécurité.',
+                definitionMeaslesVaccination: 'La couverture vaccinale contre la rougeole désigne le pourcentage d\'enfants âgés de 12 à 23 mois ayant reçu le vaccin contre la rougeole.',
+                definitionHospitalBeds: 'Les lits d\'hôpital incluent les lits pour patients hospitalisés disponibles dans les hôpitaux publics, privés, généraux et spécialisés ainsi que dans les centres de réhabilitation, mesurés pour 1 000 personnes.',
+                definitionPhysicians: 'Les médecins incluent les médecins généralistes et spécialistes, mesurés pour 1 000 personnes.',
+                definitionHealthAccess: 'L\'accès aux services de santé mesure la couverture des services de santé essentiels basée sur un indice.',
+                definitionHealthAccessRural: 'L\'accès aux services de santé (rural) mesure la couverture des services de santé essentiels dans les zones rurales basée sur un indice.',
+                definitionHealthAccessUrban: 'L\'accès aux services de santé (urbain) mesure la couverture des services de santé essentiels dans les zones urbaines basée sur un indice.',
+                definitionBirthRate: 'Le taux de natalité désigne le pourcentage de naissances assistées par du personnel de santé qualifié.',
+                definitionMalnutrition: 'La prévalence de la malnutrition désigne le pourcentage d\'enfants de moins de 5 ans souffrant de malnutrition.',
+                definitionStunting: 'La prévalence du retard de croissance désigne le pourcentage d\'enfants de moins de 5 ans présentant un retard de croissance (faible taille pour l\'âge).',
+                definitionBasicSanitation: 'L\'accès à l\'assainissement de base désigne le pourcentage de la population ayant accès à des services d\'assainissement de base.',
+                definitionHygiene: 'L\'accès à l\'hygiène désigne le pourcentage de la population ayant accès à des installations d\'hygiène de base.',
+                definitionHygieneRural: 'L\'accès à l\'hygiène (rural) désigne le pourcentage de la population rurale ayant accès à des installations d\'hygiène de base.',
+                definitionHygieneUrban: 'L\'accès à l\'hygiène (urbain) désigne le pourcentage de la population urbaine ayant accès à des installations d\'hygiène de base.',
+                definitionWash: 'L\'eau, l\'assainissement et l\'hygiène (WASH) désignent le pourcentage de la population ayant accès à des installations améliorées d\'eau, d\'assainissement et d\'hygiène.'
+            }
+        };
+
+        const indicators = {
+            'life_expectancy_male': { file: 'API_SP.DYN.LE00.MA.IN_DS2_en_excel_v2_86009.xls', icon: 'fa-male' },
+            'infant_mortality_rate': { file: 'API_SP.DYN.CDRT.IN_DS2_en_excel_v2_85364.xls', icon: 'fa-baby' },
+            'adult_mortality_rate': { file: 'API_SP.DYN.AMRT.MA_DS2_en_excel_v2_85977.xls', icon: 'fa-user-md' },
+            'SH.DYN.AIDS.ZS': { file: 'SH.DYN.AIDS.ZS.xlsx', icon: 'fa-virus' },
+            'SH.DYN.MORT': { file: 'SH.DYN.MORT.xlsx', icon: 'fa-heartbeat' },
+            'SH.H2O.SMDW.ZS': { file: 'SH.H2O.SAFE.ZS.xlsx', icon: 'fa-tint' },
+            'SH.IMM.MEAS': { file: 'H.IMM.MEAS.xlsx', icon: 'fa-syringe' },
+            'SH.MED.BEDS.ZS': { file: 'SH.MED.BEDS.ZS.xlsx', icon: 'fa-bed' },
+            'SH.MED.PHYS.ZS': { file: 'SH.MED.PHYS.ZS.xlsx', icon: 'fa-user-md' },
+            'SH.STA.ACSN': { file: 'SH.STA.ACSN.xlsx', icon: 'fa-shield-alt' },
+            'SH.STA.BRTC.ZS': { file: 'SH.STA.BRTC.ZS.xlsx', icon: 'fa-birthday-cake' },
+            'SH.STA.MALN.ZS': { file: 'SH.STA.MALN.ZS.xlsx', icon: 'fa-utensils' },
+            'SH.STA.STNT.ZS': { file: 'SH.STA.MMRT.xlsx', icon: 'fa-child' },
+            'SH.STA.BASS.ZS': { file: 'SH.TBS.INCD.xlsx', icon: 'fa-toilet' },
+            'SH.STA.HYGN.ZS': { file: 'SH.XPD.CHEX.GD.ZS.xlsx', icon: 'fa-hands-wash' },
+            'SH.STA.HYGN.RU': { file: 'SH.XPD.CHEX.PC.CD.xlsx', icon: 'fa-hands-wash' },
+            'SH.STA.HYGN.UR': { file: 'SP.ADO.TFRT.xlsx', icon: 'fa-hands-wash' },
+            'SH.STA.WASH.ZS': { file: 'SP.DYN.IMRT.IN.xlsx', icon: 'fa-shower' }
+        };
+
+        function changeLanguage() {
+            currentLanguage = document.getElementById('language-select').value;
+            updateLanguage();
+            loadIndicatorData(currentIndicator);
+        }
+
+        function updateLanguage() {
+            const t = translations[currentLanguage];
+
+            document.getElementById('sidebar-title').textContent = t.sidebarTitle;
+            document.getElementById('indicator-life-expectancy-male').textContent = t.indicatorLifeExpectancyMale;
+            document.getElementById('indicator-infant-mortality-rate').textContent = t.indicatorInfantMortalityRate;
+            document.getElementById('indicator-adult-mortality-rate').textContent = t.indicatorAdultMortalityRate;
+            document.getElementById('indicator-hiv-prevalence').textContent = t.indicatorHIVPrevalence;
+            document.getElementById('indicator-mortality-rate').textContent = t.indicatorMortalityRate;
+            document.getElementById('indicator-water-access').textContent = t.indicatorWaterAccess;
+            document.getElementById('indicator-measles-vaccination').textContent = t.indicatorMeaslesVaccination;
+            document.getElementById('indicator-hospital-beds').textContent = t.indicatorHospitalBeds;
+            document.getElementById('indicator-physicians').textContent = t.indicatorPhysicians;
+            document.getElementById('indicator-health-access').textContent = t.indicatorHealthAccess;
+            document.getElementById('indicator-health-access-rural').textContent = t.indicatorHealthAccessRural;
+            document.getElementById('indicator-health-access-urban').textContent = t.indicatorHealthAccessUrban;
+            document.getElementById('indicator-birth-rate').textContent = t.indicatorBirthRate;
+            document.getElementById('indicator-malnutrition').textContent = t.indicatorMalnutrition;
+            document.getElementById('indicator-stunting').textContent = t.indicatorStunting;
+            document.getElementById('indicator-basic-sanitation').textContent = t.indicatorBasicSanitation;
+            document.getElementById('indicator-hygiene').textContent = t.indicatorHygiene;
+            document.getElementById('indicator-hygiene-rural').textContent = t.indicatorHygieneRural;
+            document.getElementById('indicator-hygiene-urban').textContent = t.indicatorHygieneUrban;
+            document.getElementById('indicator-wash').textContent = t.indicatorWash;
+            document.getElementById('export-button').textContent = t.exportButton;
+            document.getElementById('dark-mode-button').textContent = t.darkModeButton;
+            document.getElementById('dashboard-title').textContent = t.dashboardTitle;
+            document.getElementById('dashboard-subtitle').textContent = t.dashboardSubtitle;
+            document.getElementById('chart-title').textContent = t.chartTitle;
+            document.getElementById('definition-title').textContent = t.definitionTitle;
+            document.getElementById('indicator-definition').textContent = t.indicatorDefinitionLoading;
+            document.getElementById('metadata-title').textContent = t.metadataTitle;
+            document.getElementById('table-country').textContent = t.tableCountry;
+            document.getElementById('table-recent-year').textContent = t.tableRecentYear;
+            document.getElementById('table-recent-value').textContent = t.tableRecentValue;
+            document.getElementById('table-source').textContent = t.tableSource;
+            document.getElementById('table-last-update').textContent = t.tableLastUpdate;
+
+            for (let key in indicators) {
+                const translationKey = indicatorTranslationKeys[key];
+                indicators[key].title = t[`indicator${translationKey}`];
+                indicators[key].chartTitle = t[`indicator${translationKey}`];
+                indicators[key].yAxisLabel = t[`yAxisLabel${translationKey}`];
+                indicators[key].definition = t[`definition${translationKey}`];
+            }
+        }
+
+        async function loadIndicatorData(indicatorKey) {
+            const indicator = indicators[indicatorKey] || indicators['life_expectancy_male'];
+
+            document.getElementById('dashboard-title').textContent = `${translations[currentLanguage].dashboardTitle.split(': ')[0]}: ${indicator.title}`;
+            document.getElementById('chart-title').textContent = indicator.chartTitle;
+            document.querySelectorAll('.card-icon').forEach(icon => {
+                icon.className = `fas ${indicator.icon} card-icon`;
+            });
+
+            document.getElementById('indicator-definition').textContent = translations[currentLanguage].indicatorDefinitionLoading;
+            document.getElementById('indicator-definition').classList.add('loading');
+
+            try {
+                const response = await fetch(indicator.file);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status} - ${response.statusText} for file: ${indicator.file}`);
+                }
+                const arrayBuffer = await response.arrayBuffer();
+                const workbook = XLSX.read(arrayBuffer, { type: 'array' });
+
+                const dataSheet = workbook.Sheets['Data'];
+                const dataJson = XLSX.utils.sheet_to_json(dataSheet);
+
+                const metadataSheet = workbook.Sheets['metadata'];
+                const metadataJson = XLSX.utils.sheet_to_json(metadataSheet);
+
+                const menaCountries = ['DZA', 'BHR', 'EGY', 'IRN', 'IRQ', 'JOR', 'KWT', 'LBN', 'LBY', 'MAR', 'OMN', 'QAT', 'SAU', 'SYR', 'TUN', 'ARE', 'PSE', 'YEM'];
+
+                const firstRow = dataJson[0] || {};
+                const yearColumns = Object.keys(firstRow).filter(key => /^\d{4}$/.test(key)).sort();
+                const years = yearColumns.slice(-4);
+
+                let marocData = [], menaData = [], worldData = [];
+
+                const marocRow = dataJson.find(row => row['Country Code'] === 'MAR');
+                if (marocRow) {
+                    years.forEach(year => {
+                        marocData.push(marocRow[year] ? parseFloat(marocRow[year]).toFixed(2) : null);
+                    });
+                    document.getElementById('maroc-source').textContent = 'World Development Indicators';
+                    document.getElementById('maroc-last-update').textContent = '15/04/2025';
+                    const marocRecentValue = marocRow[years[years.length - 1]] ? parseFloat(marocRow[years[years.length - 1]]).toFixed(2) : 'N/A';
+                    document.getElementById('maroc-recent-value').textContent = marocRecentValue;
+                } else {
+                    document.getElementById('maroc-recent-value').textContent = 'N/A';
+                    document.getElementById('maroc-source').textContent = 'N/A';
+                    document.getElementById('maroc-last-update').textContent = 'N/A';
+                }
+
+                const worldRow = dataJson.find(row => row['Country Code'] === 'WLD');
+                if (worldRow) {
+                    years.forEach(year => {
+                        worldData.push(worldRow[year] ? parseFloat(worldRow[year]).toFixed(2) : null);
+                    });
+                    document.getElementById('world-source').textContent = 'World Development Indicators';
+                    document.getElementById('world-last-update').textContent = '15/04/2025';
+                    const worldRecentValue = worldRow[years[years.length - 1]] ? parseFloat(worldRow[years[years.length - 1]]).toFixed(2) : 'N/A';
+                    document.getElementById('world-recent-value').textContent = worldRecentValue;
+                } else {
+                    document.getElementById('world-recent-value').textContent = 'N/A';
+                    document.getElementById('world-source').textContent = 'N/A';
+                    document.getElementById('world-last-update').textContent = 'N/A';
+                }
+
+                years.forEach(year => {
+                    let sum = 0, count = 0;
+                    menaCountries.forEach(country => {
+                        const row = dataJson.find(row => row['Country Code'] === country);
+                        if (row && row[year] && !isNaN(parseFloat(row[year]))) {
+                            sum += parseFloat(row[year]);
+                            count++;
+                        }
+                    });
+                    menaData.push(count > 0 ? parseFloat((sum / count).toFixed(2)) : null);
+                });
+                document.getElementById('mena-source').textContent = 'World Development Indicators';
+                document.getElementById('mena-last-update').textContent = '15/04/2025';
+                const menaRecentValue = menaData[menaData.length - 1] ? menaData[menaData.length - 1] : 'N/A';
+                document.getElementById('mena-recent-value').textContent = menaRecentValue;
+
+                document.getElementById('indicator-definition').textContent = indicator.definition || translations[currentLanguage].indicatorDefinitionNotAvailable;
+                document.getElementById('indicator-definition').classList.remove('loading');
+
+                currentData = {
+                    years, marocData, menaData, worldData,
+                    metadata: {
+                        maroc: { source: document.getElementById('maroc-source').textContent, lastUpdate: document.getElementById('maroc-last-update').textContent },
+                        mena: { source: document.getElementById('mena-source').textContent, lastUpdate: document.getElementById('mena-last-update').textContent },
+                        world: { source: document.getElementById('world-source').textContent, lastUpdate: document.getElementById('world-last-update').textContent }
+                    }
+                };
+
+                updateChart(years, marocData, menaData, worldData, indicator);
+            } catch (error) {
+                console.error('Error:', error);
+                document.getElementById('indicator-definition').textContent = `${translations[currentLanguage].indicatorDefinitionError}${error.message}`;
+                document.getElementById('indicator-definition').classList.remove('loading');
+            }
+        }
+
+        function updateChart(years, marocData, menaData, worldData, indicator) {
+            const ctx = document.getElementById('indicatorChart').getContext('2d');
+            if (chartInstance) chartInstance.destroy();
+
+            chartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: years,
+                    datasets: [
+                        { label: 'Morocco', data: marocData, borderColor: '#1a3c87', backgroundColor: 'rgba(26, 60, 135, 0.1)', borderWidth: 3, fill: true, tension: 0.4, pointRadius: 5, pointHoverRadius: 7, pointBackgroundColor: '#1a3c87', pointBorderColor: '#ffffff', pointBorderWidth: 2 },
+                        { label: 'MENA Region', data: menaData, borderColor: '#2a5db0', backgroundColor: 'rgba(42, 93, 176, 0.1)', borderWidth: 3, fill: true, tension: 0.4, pointRadius: 5, pointHoverRadius: 7, pointBackgroundColor: '#2a5db0', pointBorderColor: '#ffffff', pointBorderWidth: 2 },
+                        { label: 'World', data: worldData, borderColor: '#ff8c38', backgroundColor: 'rgba(255, 140, 56, 0.1)', borderWidth: 3, fill: true, tension: 0.4, pointRadius: 5, pointHoverRadius: 7, pointBackgroundColor: '#ff8c38', pointBorderColor: '#ffffff', pointBorderWidth: 2 }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: { intersect: false, mode: 'index' },
+                    scales: {
+                        y: { beginAtZero: false, title: { display: true, text: indicator.yAxisLabel, font: { size: 14, weight: '600' }, color: '#1a3c87' }, grid: { color: 'rgba(0, 0, 0, 0.05)' }, ticks: { color: '#555', callback: value => value ? value.toFixed(2) : 'N/A' } },
+                        x: { title: { display: true, text: translations[currentLanguage].yearLabel, font: { size: 14, weight: '600' }, color: '#1a3c87' }, grid: { display: false }, ticks: { color: '#555', font: { weight: '500' } } }
+                    },
+                    plugins: {
+                        legend: { position: 'top', labels: { font: { size: 14, weight: '500' }, color: '#333', padding: 20, usePointStyle: true, pointStyle: 'circle' } },
+                        tooltip: {
+                            backgroundColor: 'rgba(0, 0, 0, 0.8)', titleFont: { size: 14, weight: '600' }, bodyFont: { size: 13 }, padding: 12, usePointStyle: true,
+                            callbacks: { label: context => `${context.dataset.label}: ${context.parsed.y ? context.parsed.y.toFixed(2) : 'N/A'}` }
+                        },
+                        zoom: { zoom: { wheel: { enabled: true }, pinch: { enabled: true }, mode: 'xy' }, pan: { enabled: true, mode: 'xy' } }
+                    },
+                    animation: { duration: 1000, easing: 'easeOutQuart' }
+                }
+            });
+        }
+
+        function toggleSidebar() {
+            const sidebar = document.querySelector('.sidebar');
+            const mainContent = document.querySelector('.main-content');
+            sidebar.classList.toggle('collapsed');
+            mainContent.classList.toggle('collapsed');
+        }
+
+        function toggleDarkMode() {
+            isDarkMode = !isDarkMode;
+            document.body.classList.toggle('dark-mode');
+        }
+
+        function exportData() {
+            if (!currentData) return alert(translations[currentLanguage].exportAlert);
+            const wb = XLSX.utils.book_new();
+            const wsData = XLSX.utils.json_to_sheet(currentData.years.map((year, index) => ({
+                [translations[currentLanguage].yearLabel]: year,
+                Morocco: currentData.marocData[index] || 'N/A',
+                'MENA Region': currentData.menaData[index] || 'N/A',
+                World: currentData.worldData[index] || 'N/A'
+            })));
+            XLSX.utils.book_append_sheet(wb, wsData, 'Data');
+            XLSX.writeFile(wb, `indicators_${currentIndicator}_${new Date().toISOString().split('T')[0]}.xlsx`);
+        }
+
+        document.querySelectorAll('.indicator-list button').forEach(button => {
+            button.addEventListener('click', () => {
+                currentIndicator = button.getAttribute('data-indicator');
+                document.querySelectorAll('.indicator-list button').forEach(btn => btn.classList.remove('active'));
+                button.classList.add('active');
+                loadIndicatorData(currentIndicator);
+            });
+        });
+
+        document.querySelector('.sidebar-toggle').addEventListener('click', toggleSidebar);
+
+        document.addEventListener('DOMContentLoaded', () => {
+            loadIndicatorData(currentIndicator);
+            const cards = document.querySelectorAll('.card');
+            cards.forEach((card, index) => card.style.animationDelay = `${index * 0.1}s`);
+            updateLanguage();
+        });
+    </script>
+</body>
+
+</html>
