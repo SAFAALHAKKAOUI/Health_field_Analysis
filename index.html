@@ -4,8 +4,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tableau de bord - Indicateurs</title>
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <title>Tableau de bord - Indicateurs de Santé</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -13,19 +13,32 @@
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <style>
         :root {
-            --primary-color: #1e3a8a;
-            --secondary-color: #f59e0b;
-            --background-color: #f3f4f6;
-            --card-bg: #ffffff;
-            --text-color: #1f2937;
-            --light-text: #ffffff;
-            --shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-            --transition: all 0.3s ease;
-            --dark-bg: #1e1e2f;
-            --dark-text: #e0e0e0;
-            --dark-card-bg: #2a2a3d;
-            --sidebar-bg: #003087;
-            --gray: #e5e7eb;
+            --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --secondary-gradient: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            --success-gradient: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            --warning-gradient: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+
+            --primary-color: #667eea;
+            --secondary-color: #f5576c;
+            --accent-color: #4facfe;
+            --success-color: #43e97b;
+
+            --background-light: #f8fafc;
+            --background-dark: #0f172a;
+            --card-light: #ffffff;
+            --card-dark: #1e293b;
+            --text-light: #1e293b;
+            --text-dark: #f1f5f9;
+            --border-light: #e2e8f0;
+            --border-dark: #334155;
+
+            --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+            --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+            --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+            --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            --transition-fast: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
         * {
@@ -35,405 +48,629 @@
         }
 
         body {
-            font-family: 'Roboto', sans-serif;
-            background-color: var(--background-color);
-            color: var(--text-color);
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--background-light);
+            color: var(--text-light);
             line-height: 1.6;
             transition: var(--transition);
             min-height: 100vh;
             display: flex;
             flex-direction: column;
+            font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
         }
 
         body.dark-mode {
-            background-color: var(--dark-bg);
-            color: var(--dark-text);
-        }
-
-        body.dark-mode .card {
-            background-color: var(--dark-card-bg);
+            background: var(--background-dark);
+            color: var(--text-dark);
         }
 
         .app-container {
             display: flex;
             flex: 1 0 auto;
+            gap: 1.5rem;
+            padding: 1.5rem;
         }
 
+        /* Sidebar améliorée */
         .sidebar {
-            width: 280px;
-            background-color: var(--sidebar-bg);
-            color: var(--light-text);
-            padding: 1.5rem 1rem;
-            position: fixed;
-            top: 20px;
-            bottom: 20px;
-            margin: 20px 0 20px 20px;
-            z-index: 100;
-            box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
-            border-radius: 15px;
+            width: 320px;
+            background: var(--card-light);
+            border: 1px solid var(--border-light);
+            border-radius: 20px;
+            padding: 2rem 1.5rem;
+            box-shadow: var(--shadow-lg);
+            transition: var(--transition);
+            position: sticky;
+            top: 1.5rem;
+            height: fit-content;
+            max-height: calc(100vh - 3rem);
+            overflow: hidden;
             display: flex;
             flex-direction: column;
-            align-items: center;
+        }
+
+        body.dark-mode .sidebar {
+            background: var(--card-dark);
+            border-color: var(--border-dark);
         }
 
         .sidebar-header {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
+            text-align: center;
             margin-bottom: 2rem;
-            padding-bottom: 1rem;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
-            width: 100%;
+            padding-bottom: 1.5rem;
+            border-bottom: 2px solid var(--border-light);
+            position: relative;
+        }
+
+        body.dark-mode .sidebar-header {
+            border-bottom-color: var(--border-dark);
+        }
+
+        .sidebar-header::before {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 60px;
+            height: 2px;
+            background: var(--primary-gradient);
+            border-radius: 1px;
         }
 
         .sidebar h2 {
-            font-size: 1.4rem;
+            font-size: 1.5rem;
+            font-weight: 700;
+            background: var(--primary-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 0.5rem;
+        }
+
+        .sidebar-subtitle {
+            font-size: 0.875rem;
+            color: #64748b;
             font-weight: 500;
-            text-align: center;
-            margin: 0;
         }
 
         .indicator-list {
             list-style: none;
             padding: 0;
             margin: 0;
-            width: 100%;
             flex-grow: 1;
             overflow-y: auto;
             scrollbar-width: thin;
-            scrollbar-color: var(--light-text) var(--sidebar-bg);
+            scrollbar-color: var(--primary-color) transparent;
         }
 
         .indicator-list::-webkit-scrollbar {
-            width: 8px;
+            width: 6px;
         }
 
         .indicator-list::-webkit-scrollbar-track {
-            background: var(--sidebar-bg);
-            border-radius: 8px;
+            background: transparent;
         }
 
         .indicator-list::-webkit-scrollbar-thumb {
-            background-color: var(--light-text);
-            border-radius: 8px;
-            border: 2px solid var(--sidebar-bg);
-        }
-
-        .indicator-list::-webkit-scrollbar-thumb:hover {
-            background-color: var(--secondary-color);
+            background: var(--primary-color);
+            border-radius: 3px;
         }
 
         .indicator-list li {
-            margin-bottom: 1rem;
+            margin-bottom: 0.5rem;
         }
 
         .indicator-list button {
             width: 100%;
-            padding: 1rem;
+            padding: 1rem 1.25rem;
             text-align: left;
-            background-color: rgba(255, 255, 255, 0.1);
-            color: var(--light-text);
-            border: none;
-            border-radius: 10px;
+            background: transparent;
+            color: var(--text-light);
+            border: 2px solid transparent;
+            border-radius: 12px;
             cursor: pointer;
-            font-size: 1.1rem;
+            font-size: 0.875rem;
+            font-weight: 500;
             transition: var(--transition);
             display: flex;
             align-items: center;
-            justify-content: flex-start;
+            gap: 0.75rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        body.dark-mode .indicator-list button {
+            color: var(--text-dark);
+        }
+
+        .indicator-list button::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: var(--primary-gradient);
+            opacity: 0;
+            transition: var(--transition);
+            border-radius: 10px;
+        }
+
+        .indicator-list button:hover::before {
+            opacity: 0.1;
         }
 
         .indicator-list button:hover {
-            background-color: rgba(255, 255, 255, 0.2);
-            transform: translateX(5px);
+            transform: translateX(4px);
+            border-color: var(--primary-color);
         }
 
         .indicator-list button.active {
-            background-color: var(--secondary-color);
-            font-weight: 500;
+            background: var(--primary-gradient);
+            color: white;
+            transform: translateX(4px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .indicator-list button.active::before {
+            opacity: 0;
         }
 
         .indicator-list button i {
-            margin-right: 1rem;
-            font-size: 1.3rem;
+            font-size: 1.125rem;
+            min-width: 20px;
+            position: relative;
+            z-index: 1;
         }
 
+        .indicator-list button span {
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Main content amélioré */
         .main-content {
             flex: 1;
-            margin-left: 280px;
-            padding: 1.5rem;
-            width: calc(100% - 280px);
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
         }
 
         .dashboard-header {
-            background-color: var(--primary-color);
-            color: var(--light-text);
-            border-radius: 8px;
-            padding: 1.2rem;
-            margin-bottom: 1.5rem;
-            box-shadow: var(--shadow);
+            background: var(--card-light);
+            border: 1px solid var(--border-light);
+            border-radius: 20px;
+            padding: 2rem;
+            box-shadow: var(--shadow-lg);
             display: flex;
             justify-content: space-between;
             align-items: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        body.dark-mode .dashboard-header {
+            background: var(--card-dark);
+            border-color: var(--border-dark);
+        }
+
+        .dashboard-header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: var(--primary-gradient);
         }
 
         .dashboard-header h1 {
-            font-size: 1.6rem;
-            font-weight: 500;
-            margin-bottom: 0.25rem;
+            font-size: 2rem;
+            font-weight: 700;
+            background: var(--primary-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 0.5rem;
         }
 
         .dashboard-header p {
-            font-size: 0.95rem;
-            opacity: 0.9;
+            font-size: 1rem;
+            color: #64748b;
+            font-weight: 500;
         }
 
         .button-group {
             display: flex;
-            gap: 0.8rem;
+            gap: 1rem;
+            align-items: center;
         }
 
+        /* Filtres améliorés */
         .filter-panel {
-            background-color: var(--background-color);
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            padding: 1rem;
+            background: var(--card-light);
+            border: 1px solid var(--border-light);
+            border-radius: 16px;
+            padding: 1.5rem;
+            box-shadow: var(--shadow-md);
             display: flex;
-            gap: 1rem;
+            gap: 1.5rem;
             flex-wrap: wrap;
-            margin-bottom: 1.5rem;
+            align-items: end;
+        }
+
+        body.dark-mode .filter-panel {
+            background: var(--card-dark);
+            border-color: var(--border-dark);
         }
 
         .filter-group {
             display: flex;
             flex-direction: column;
-            min-width: 160px;
+            min-width: 180px;
+            gap: 0.5rem;
         }
 
         .filter-group label {
-            margin-bottom: 0.5rem;
-            font-weight: 500;
-            font-size: 0.9rem;
-            color: var(--primary-color);
+            font-weight: 600;
+            font-size: 0.875rem;
+            color: var(--text-light);
+        }
+
+        body.dark-mode .filter-group label {
+            color: var(--text-dark);
         }
 
         .filter-group select {
-            padding: 0.5rem;
-            border: 1px solid #ccc;
-            border-radius: 6px;
-            background-color: white;
-            font-family: 'Roboto', sans-serif;
-            font-size: 0.85rem;
+            padding: 0.75rem 1rem;
+            border: 2px solid var(--border-light);
+            border-radius: 10px;
+            background: var(--card-light);
+            color: var(--text-light);
+            font-family: inherit;
+            font-size: 0.875rem;
+            font-weight: 500;
             transition: var(--transition);
             cursor: pointer;
+        }
+
+        body.dark-mode .filter-group select {
+            background: var(--card-dark);
+            border-color: var(--border-dark);
+            color: var(--text-dark);
         }
 
         .filter-group select:focus {
             outline: none;
-            border-color: var(--secondary-color);
-            box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.2);
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgb(102 126 234 / 0.1);
         }
 
+        /* Boutons d'action améliorés */
         .action-button {
-            padding: 0.5rem 1rem;
+            padding: 0.75rem 1.5rem;
             border: none;
-            border-radius: 6px;
-            background-color: var(--secondary-color);
-            color: var(--light-text);
-            font-family: 'Roboto', sans-serif;
-            font-size: 0.85rem;
-            font-weight: 500;
+            border-radius: 12px;
+            background: var(--primary-gradient);
+            color: white;
+            font-family: inherit;
+            font-size: 0.875rem;
+            font-weight: 600;
             cursor: pointer;
             transition: var(--transition);
             display: flex;
             align-items: center;
-            gap: 0.4rem;
+            gap: 0.5rem;
+            box-shadow: var(--shadow-md);
+            position: relative;
+            overflow: hidden;
         }
 
         .action-button:hover {
-            background-color: #d97706;
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .action-button:active {
+            transform: translateY(0);
+        }
+
+        .action-button.secondary {
+            background: var(--secondary-gradient);
+        }
+
+        .action-button.success {
+            background: var(--success-gradient);
         }
 
         .action-button i {
             font-size: 1rem;
         }
 
+        /* Grille d'indicateurs améliorée */
         .indicators-grid {
             display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 1.2rem;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 1.5rem;
         }
 
         .card {
-            background-color: var(--card-bg);
-            border-radius: 8px;
-            padding: 1.2rem;
-            box-shadow: var(--shadow);
+            background: var(--card-light);
+            border: 1px solid var(--border-light);
+            border-radius: 20px;
+            padding: 1.5rem;
+            box-shadow: var(--shadow-md);
             transition: var(--transition);
+            position: relative;
+            overflow: visible;
+            /* CHANGÉ: permet aux tooltips de déborder */
+        }
+
+        body.dark-mode .card {
+            background: var(--card-dark);
+            border-color: var(--border-dark);
         }
 
         .card:hover {
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-xl);
+        }
+
+        /* Indicateur sélectionné - mise en évidence */
+        .card.selected {
+            border: 3px solid var(--primary-color);
+            box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.2), var(--shadow-xl);
+            transform: translateY(-6px);
+        }
+
+        .card.selected::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 6px;
+            background: var(--primary-gradient);
+            z-index: 1;
+        }
+
+        .card.selected .card-header::after {
+            background: var(--primary-gradient);
+            width: 100px;
         }
 
         .card-header {
             display: flex;
-            justify-content: center;
+            justify-content: space-between;
             align-items: center;
-            margin-bottom: 0.75rem;
-            padding-bottom: 0.5rem;
-            border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 2px solid var(--border-light);
             position: relative;
+        }
+
+        body.dark-mode .card-header {
+            border-bottom-color: var(--border-dark);
+        }
+
+        .card-header::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            width: 60px;
+            height: 2px;
+            background: var(--primary-gradient);
+            border-radius: 1px;
+            transition: var(--transition);
         }
 
         .card h2 {
-            color: var(--primary-color);
-            font-size: 1.1rem;
-            font-weight: 500;
+            font-size: 1.125rem;
+            font-weight: 600;
+            color: var(--text-light);
             margin: 0;
-            text-align: center;
+        }
+
+        body.dark-mode .card h2 {
+            color: var(--text-dark);
         }
 
         .card-icon {
-            color: var(--secondary-color);
-            font-size: 1.2rem;
-            position: absolute;
-            right: 0;
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            background: var(--primary-gradient);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1.25rem;
+            box-shadow: var(--shadow-md);
         }
 
+        /* Tooltip CORRECTEMENT POSITIONNÉ - au-dessus du titre */
         .tooltip {
             position: relative;
+            cursor: help;
+            display: inline-block;
         }
 
         .tooltip .tooltiptext {
             visibility: hidden;
-            width: 200px;
-            background-color: #1f2937;
-            color: var(--light-text);
-            text-align: center;
-            border-radius: 6px;
-            padding: 0.5rem;
-            position: absolute;
-            z-index: 1;
-            bottom: 125%;
-            left: 50%;
-            transform: translateX(-50%);
-            font-size: 0.8rem;
             opacity: 0;
-            transition: opacity 0.3s;
+            position: absolute;
+            z-index: 9999;
+            width: 400px;
+            max-width: 90vw;
+            background: #1e293b;
+            color: white;
+            text-align: left;
+            border-radius: 12px;
+            padding: 1.5rem;
+            font-size: 0.875rem;
+            line-height: 1.6;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+            border: 1px solid #334155;
+            word-wrap: break-word;
+            hyphens: auto;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+
+            /* POSITION FIXE : toujours au-dessus du titre */
+            bottom: 100%;
+            left: 0;
+            margin-bottom: 15px;
+            transform: translateY(10px);
+        }
+
+        body.dark-mode .tooltip .tooltiptext {
+            background: white;
+            color: #1e293b;
+            border-color: #e2e8f0;
         }
 
         .tooltip:hover .tooltiptext {
             visibility: visible;
             opacity: 1;
+            transform: translateY(0);
         }
 
+        /* Flèche du tooltip - pointant vers le titre */
         .tooltip .tooltiptext::after {
             content: '';
             position: absolute;
             top: 100%;
-            left: 50%;
-            margin-left: -5px;
-            border-width: 5px;
+            left: 30px;
+            border-width: 10px;
             border-style: solid;
-            border-color: #1f2937 transparent transparent transparent;
+            border-color: #1e293b transparent transparent transparent;
         }
 
+        body.dark-mode .tooltip .tooltiptext::after {
+            border-color: white transparent transparent transparent;
+        }
+
+        /* Ajustement pour mobile */
+        @media (max-width: 768px) {
+            .tooltip .tooltiptext {
+                width: 320px;
+                font-size: 0.8rem;
+                padding: 1.2rem;
+                left: -50px;
+                /* Centrer un peu mieux sur mobile */
+            }
+
+            .tooltip .tooltiptext::after {
+                left: 80px;
+                /* Ajuster la position de la flèche */
+            }
+        }
+
+        @media (max-width: 480px) {
+            .tooltip .tooltiptext {
+                width: 280px;
+                left: -80px;
+            }
+
+            .tooltip .tooltiptext::after {
+                left: 110px;
+            }
+        }
+
+        /* Container de graphique amélioré */
         .chart-container {
             position: relative;
-            height: 200px;
+            height: 280px;
             width: 100%;
+            padding: 1rem;
+            background: linear-gradient(145deg, #f8fafc 0%, #f1f5f9 100%);
+            border-radius: 12px;
+            margin-bottom: 1rem;
+        }
+
+        body.dark-mode .chart-container {
+            background: linear-gradient(145deg, #1e293b 0%, #334155 100%);
         }
 
         .source-info {
-            font-size: 0.8rem;
-            color: #666;
-            margin-top: 0.5rem;
+            font-size: 0.75rem;
+            color: #64748b;
             text-align: right;
             font-style: italic;
+            padding: 0.5rem 0;
+            border-top: 1px solid var(--border-light);
         }
 
         body.dark-mode .source-info {
-            color: #999;
+            color: #94a3b8;
+            border-top-color: var(--border-dark);
         }
 
-        @media (max-width: 1200px) {
-            .indicators-grid {
-                grid-template-columns: repeat(3, 1fr);
-            }
+        /* Animation de mise en évidence */
+        .highlight {
+            animation: highlightAnimation 2s ease-in-out;
         }
 
-        @media (max-width: 992px) {
-            .sidebar {
-                width: 220px;
-                border-radius: 15px;
-                top: 15px;
-                margin: 15px 0 15px 15px;
+        @keyframes highlightAnimation {
+
+            0%,
+            100% {
+                border-color: var(--border-light);
+                box-shadow: var(--shadow-md);
             }
 
-            .main-content {
-                margin-left: 220px;
-                width: calc(100% - 220px);
-            }
-
-            .indicators-grid {
-                grid-template-columns: repeat(2, 1fr);
-            }
-
-            .dashboard-header .button-group {
-                flex-direction: column;
-                gap: 0.5rem;
+            50% {
+                border-color: var(--primary-color);
+                box-shadow: 0 0 0 4px rgb(102 126 234 / 0.2), var(--shadow-lg);
             }
         }
 
-        @media (max-width: 768px) {
-            .app-container {
-                flex-direction: column;
-            }
+        /* Footer amélioré */
+        .footer {
+            background: var(--card-light);
+            border: 1px solid var(--border-light);
+            border-radius: 20px 20px 0 0;
+            padding: 2rem;
+            text-align: center;
+            margin-top: 2rem;
+            box-shadow: var(--shadow-lg);
+        }
 
-            .sidebar {
-                width: 100%;
-                position: static;
-                margin: 0;
-                padding: 1rem;
-                border-radius: 0;
-                top: 0;
-            }
+        body.dark-mode .footer {
+            background: var(--card-dark);
+            border-color: var(--border-dark);
+        }
 
-            .main-content {
-                margin-left: 0;
-                padding: 1rem;
-                width: 100%;
-            }
+        .footer .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 1rem;
+        }
 
-            .dashboard-header h1 {
-                font-size: 1.4rem;
-            }
+        .footer img {
+            height: 48px;
+            filter: drop-shadow(0 2px 4px rgb(0 0 0 / 0.1));
+        }
 
-            .indicators-grid {
-                grid-template-columns: 1fr;
-            }
+        .footer p {
+            font-size: 0.875rem;
+            color: #64748b;
+            font-weight: 500;
+        }
 
-            .chart-container {
-                height: 180px;
-            }
-
-            .filter-panel {
-                flex-direction: column;
-            }
-
-            .dashboard-header .button-group {
-                position: static;
-                margin-top: 1rem;
-                flex-direction: column;
-                align-items: flex-end;
-            }
+        /* Animations d'entrée */
+        .fade-in {
+            animation: fadeIn 0.8s cubic-bezier(0.4, 0, 0.2, 1) forwards;
         }
 
         @keyframes fadeIn {
             from {
                 opacity: 0;
-                transform: translateY(10px);
+                transform: translateY(20px);
             }
 
             to {
@@ -442,8 +679,150 @@
             }
         }
 
-        .fade-in {
-            animation: fadeIn 0.6s ease forwards;
+        /* États de chargement */
+        .loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 200px;
+            color: #64748b;
+        }
+
+        .loading::after {
+            content: '';
+            width: 20px;
+            height: 20px;
+            border: 2px solid #e2e8f0;
+            border-top: 2px solid var(--primary-color);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-left: 0.5rem;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* Dropdown de langue amélioré */
+        #language-select {
+            position: absolute;
+            top: 100%;
+            right: 0;
+            margin-top: 0.5rem;
+            background: var(--card-light);
+            border: 1px solid var(--border-light);
+            border-radius: 12px;
+            box-shadow: var(--shadow-lg);
+            min-width: 150px;
+            z-index: 1000;
+        }
+
+        body.dark-mode #language-select {
+            background: var(--card-dark);
+            border-color: var(--border-dark);
+        }
+
+        #language-select option {
+            padding: 0.75rem 1rem;
+        }
+
+        .language-dropdown {
+            position: relative;
+        }
+
+        /* Responsive amélioré */
+        @media (max-width: 1200px) {
+            .indicators-grid {
+                grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            }
+
+            .tooltip .tooltiptext {
+                width: 300px;
+            }
+        }
+
+        @media (max-width: 992px) {
+            .app-container {
+                flex-direction: column;
+                gap: 1rem;
+                padding: 1rem;
+            }
+
+            .sidebar {
+                width: 100%;
+                position: static;
+                max-height: none;
+                height: auto;
+            }
+
+            .indicator-list {
+                max-height: 300px;
+            }
+
+            .dashboard-header {
+                flex-direction: column;
+                gap: 1.5rem;
+                text-align: center;
+            }
+
+            .button-group {
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+
+            .filter-panel {
+                flex-direction: column;
+                gap: 1rem;
+            }
+
+            .filter-group {
+                min-width: 100%;
+            }
+
+            .tooltip .tooltiptext {
+                width: 280px;
+                position: absolute;
+                left: 50%;
+                transform: translateX(-50%) translateY(10px);
+            }
+
+            .tooltip:hover .tooltiptext {
+                transform: translateX(-50%) translateY(0);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .indicators-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .chart-container {
+                height: 240px;
+            }
+
+            .dashboard-header h1 {
+                font-size: 1.5rem;
+            }
+
+            .card {
+                padding: 1rem;
+            }
+
+            .sidebar {
+                padding: 1.5rem 1rem;
+            }
+
+            .tooltip .tooltiptext {
+                width: 250px;
+                font-size: 0.8rem;
+                padding: 1rem;
+            }
         }
     </style>
 </head>
@@ -452,51 +831,93 @@
     <div class="app-container">
         <aside class="sidebar">
             <div class="sidebar-header">
-                <h2 id="sidebar-title">Tableau de bord</h2>
+                <h2 id="sidebar-title">Indicateurs de Santé</h2>
+                <p class="sidebar-subtitle">Tableau de bord interactif</p>
             </div>
             <ul class="indicator-list" id="indicator-list">
-                <li><button data-indicator="life_expectancy" class="active"><i class="fas fa-heartbeat"></i><span
-                            id="indicator-life-expectancy">Espérance de vie</span></button></li>
-                <li><button data-indicator="infant_mortality_rate"><i class="fas fa-baby"></i><span
-                            id="indicator-infant-mortality-rate">Taux de mortalité infantile</span></button></li>
-                <li><button data-indicator="adult_mortality_rate"><i class="fas fa-user-md"></i><span
-                            id="indicator-adult-mortality-rate">Taux de mortalité adulte</span></button></li>
-                <li><button data-indicator="SH.DYN.AIDS.ZS"><i class="fas fa-virus"></i><span
-                            id="indicator-hiv-prevalence">Prévalence VIH (%)</span></button></li>
-                <li><button data-indicator="SH.DYN.MORT"><i class="fas fa-heartbeat"></i><span
-                            id="indicator-mortality-rate">Taux de mortalité</span></button></li>
-                <li><button data-indicator="SH.H2O.SMDW.ZS"><i class="fas fa-tint"></i><span
-                            id="indicator-water-access">Accès à l'eau potable sûre (%)</span></button></li>
-                <li><button data-indicator="SH.IMM.MEAS"><i class="fas fa-syringe"></i><span
-                            id="indicator-measles-vaccination">Vaccination rougeole (%)</span></button></li>
-                <li><button data-indicator="SH.MED.BEDS.ZS"><i class="fas fa-bed"></i><span
-                            id="indicator-hospital-beds">Lits d'hôpital (pour 1000)</span></button></li>
-                <li><button data-indicator="SH.MED.PHYS.ZS"><i class="fas fa-user-md"></i><span
-                            id="indicator-physicians">Médecins (pour 1000)</span></button></li>
-                <li><button data-indicator="SH.STA.ACSN"><i class="fas fa-shield-alt"></i><span
-                            id="indicator-health-access">Accès aux services de santé</span></button></li>
-                <li><button data-indicator="SH.STA.ACSN.RU"><i class="fas fa-shield-alt"></i><span
-                            id="indicator-health-access-rural">Accès aux services de santé (rural)</span></button></li>
-                <li><button data-indicator="SH.STA.ACSN.UR"><i class="fas fa-shield-alt"></i><span
-                            id="indicator-health-access-urban">Accès aux services de santé (urbain)</span></button></li>
-                <li><button data-indicator="SH.STA.BRTC.ZS"><i class="fas fa-birthday-cake"></i><span
-                            id="indicator-birth-rate">Taux de natalité (%)</span></button></li>
-                <li><button data-indicator="SH.STA.MALN.ZS"><i class="fas fa-utensils"></i><span
-                            id="indicator-malnutrition">Malnutrition (%)</span></button></li>
-                <li><button data-indicator="SH.STA.STNT.ZS"><i class="fas fa-child"></i><span
-                            id="indicator-stunting">Retard de croissance (%)</span></button></li>
-                <li><button data-indicator="SH.STA.BASS.ZS"><i class="fas fa-toilet"></i><span
-                            id="indicator-basic-sanitation">Accès à l'assainissement de base (%)</span></button></li>
-                <li><button data-indicator="SH.STA.HYGN.ZS"><i class="fas fa-hands-wash"></i><span
-                            id="indicator-hygiene">Accès à l'hygiène (%)</span></button></li>
-                <!-- <li><button data-indicator="SH.STA.HYGN.RU"><i class="fas fa-hands-wash"></i><span
-                            id="indicator-hygiene-rural">Accès à l'hygiène (rural) (%)</span></button></li>
-                <li><button data-indicator="SH.STA.HYGN.UR"><i class="fas fa-hands-wash"></i><span
-                            id="indicator-hygiene-urban">Accès à l'hygiène (urbain) (%)</span></button></li> -->
-                <li><button data-indicator="SH.STA.WASH.ZS"><i class="fas fa-shower"></i><span id="indicator-wash">Eau,
-                            assainissement et hygiène (%)</span></button></li>
+                <li><button data-indicator="life_expectancy" class="active">
+                        <i class="fas fa-heartbeat"></i>
+                        <span id="indicator-life-expectancy">Espérance de vie</span>
+                    </button></li>
+                <li><button data-indicator="infant_mortality_rate">
+                        <i class="fas fa-baby"></i>
+                        <span id="indicator-infant-mortality-rate">Taux de mortalité infantile</span>
+                    </button></li>
+                <li><button data-indicator="adult_mortality_rate">
+                        <i class="fas fa-user-md"></i>
+                        <span id="indicator-adult-mortality-rate">Taux de mortalité adulte</span>
+                    </button></li>
+                <li><button data-indicator="SH.DYN.AIDS.ZS">
+                        <i class="fas fa-virus"></i>
+                        <span id="indicator-hiv-prevalence">Prévalence VIH (%)</span>
+                    </button></li>
+                <li><button data-indicator="SH.DYN.MORT">
+                        <i class="fas fa-heartbeat"></i>
+                        <span id="indicator-mortality-rate">Taux de mortalité</span>
+                    </button></li>
+                <li><button data-indicator="SH.H2O.SMDW.ZS">
+                        <i class="fas fa-tint"></i>
+                        <span id="indicator-water-access">Accès à l'eau potable sûre (%)</span>
+                    </button></li>
+                <li><button data-indicator="SH.IMM.MEAS">
+                        <i class="fas fa-syringe"></i>
+                        <span id="indicator-measles-vaccination">Vaccination rougeole (%)</span>
+                    </button></li>
+                <li><button data-indicator="SH.MED.BEDS.ZS">
+                        <i class="fas fa-bed"></i>
+                        <span id="indicator-hospital-beds">Lits d'hôpital (pour 1000)</span>
+                    </button></li>
+                <li><button data-indicator="SH.MED.PHYS.ZS">
+                        <i class="fas fa-user-md"></i>
+                        <span id="indicator-physicians">Médecins (pour 1000)</span>
+                    </button></li>
+                <li><button data-indicator="SH.STA.ACSN">
+                        <i class="fas fa-shield-alt"></i>
+                        <span id="indicator-health-access">Accès aux services de santé</span>
+                    </button></li>
+                <li><button data-indicator="SH.STA.ACSN.RU">
+                        <i class="fas fa-shield-alt"></i>
+                        <span id="indicator-health-access-rural">Accès aux services de santé (rural)</span>
+                    </button></li>
+                <li><button data-indicator="SH.STA.ACSN.UR">
+                        <i class="fas fa-shield-alt"></i>
+                        <span id="indicator-health-access-urban">Accès aux services de santé (urbain)</span>
+                    </button></li>
+                <li><button data-indicator="SH.STA.BRTC.ZS">
+                        <i class="fas fa-birthday-cake"></i>
+                        <span id="indicator-birth-rate">Taux de natalité (%)</span>
+                    </button></li>
+                <li><button data-indicator="SH.STA.MALN.ZS">
+                        <i class="fas fa-utensils"></i>
+                        <span id="indicator-malnutrition">Malnutrition (%)</span>
+                    </button></li>
+                <li><button data-indicator="SH.STA.STNT.ZS">
+                        <i class="fas fa-child"></i>
+                        <span id="indicator-stunting">Retard de croissance (%)</span>
+                    </button></li>
+                <li><button data-indicator="SH.STA.BASS.ZS">
+                        <i class="fas fa-toilet"></i>
+                        <span id="indicator-basic-sanitation">Accès à l'assainissement de base (%)</span>
+                    </button></li>
+                <li><button data-indicator="SH.STA.HYGN.ZS">
+                        <i class="fas fa-hands-wash"></i>
+                        <span id="indicator-hygiene">Accès à l'hygiène (%)</span>
+                    </button></li>
+                <li><button data-indicator="SH.STA.HYGN.RU">
+                        <i class="fas fa-hands-wash"></i>
+                        <span id="indicator-hygiene-rural">Accès à l'hygiène (rural) (%)</span>
+                    </button></li>
+                <li><button data-indicator="SH.STA.HYGN.UR">
+                        <i class="fas fa-hands-wash"></i>
+                        <span id="indicator-hygiene-urban">Accès à l'hygiène (urbain) (%)</span>
+                    </button></li>
+                <li><button data-indicator="SH.STA.WASH.ZS">
+                        <i class="fas fa-shower"></i>
+                        <span id="indicator-wash">Eau, assainissement et hygiène (%)</span>
+                    </button></li>
             </ul>
         </aside>
+
         <main class="main-content">
             <header class="dashboard-header fade-in">
                 <div>
@@ -504,19 +925,29 @@
                     <p id="dashboard-subtitle">Comparaison entre Maroc, Région MENA et Monde</p>
                 </div>
                 <div class="button-group">
-                    <button class="action-button" id="export-button" onclick="exportData()"><i
-                            class="fas fa-file-export"></i> Exporter en Excel</button>
-                    <button class="action-button" id="dark-mode-button" onclick="toggleDarkMode()"><i
-                            class="fas fa-moon"></i> Mode Sombre</button>
-                    <button class="action-button" id="language-button" onclick="toggleLanguageDropdown()"><i
-                            class="fas fa-globe"></i> Langue <i class="fas fa-chevron-down"></i></button>
-                    <select id="language-select" onchange="changeLanguage()" style="display: none;">
-                        <option value="fr">Français</option>
-                        <option value="en">English</option>
-                    </select>
+                    <button class="action-button success" id="export-button" onclick="exportData()">
+                        <i class="fas fa-file-export"></i>
+                        <span>Exporter Excel</span>
+                    </button>
+                    <button class="action-button secondary" id="dark-mode-button" onclick="toggleDarkMode()">
+                        <i class="fas fa-moon"></i>
+                        <span>Mode Sombre</span>
+                    </button>
+                    <div class="language-dropdown">
+                        <button class="action-button" id="language-button" onclick="toggleLanguageDropdown()">
+                            <i class="fas fa-globe"></i>
+                            <span>Langue</span>
+                            <i class="fas fa-chevron-down"></i>
+                        </button>
+                        <select id="language-select" onchange="changeLanguage()" style="display: none;">
+                            <option value="fr">Français</option>
+                            <option value="en">English</option>
+                        </select>
+                    </div>
                 </div>
             </header>
-            <div class="filter-panel">
+
+            <div class="filter-panel fade-in">
                 <div class="filter-group">
                     <label for="region-filter">Région</label>
                     <select id="region-filter" onchange="applyFilters()">
@@ -548,23 +979,25 @@
                     </select>
                 </div>
             </div>
+
             <div class="indicators-grid" id="indicators-container"></div>
         </main>
     </div>
+
     <footer class="footer">
-        <div class="container mx-auto px-4 flex flex-col md:flex-row justify-center items-center">
-            <div class="flex items-center mb-4 md:mb-0">
-                <img src="https://decisiveai.ma/wp-content/uploads/2024/12/Logo-Decisive-AI-PNG.png"
-                    alt="Decisive AI Logo" class="h-8 mr-3">
-                <p class="text-sm text-gray-600">© 2025 DecisiveAI. Tous droits réservés.</p>
-            </div>
+        <div class="container">
+            <img src="https://decisiveai.ma/wp-content/uploads/2024/12/Logo-Decisive-AI-PNG.png" alt="Decisive AI Logo">
+            <p>© 2025 DecisiveAI. Tous droits réservés.</p>
         </div>
     </footer>
+
     <script>
+        // Variables globales
         let chartInstances = {};
         let currentData = {};
         let isDarkMode = false;
         let currentLanguage = 'fr';
+        let selectedIndicator = 'life_expectancy';
 
         const indicatorTranslationKeys = {
             'life_expectancy': 'LifeExpectancy',
@@ -591,7 +1024,7 @@
 
         const translations = {
             en: {
-                sidebarTitle: 'Dashboard',
+                sidebarTitle: 'Health Indicators',
                 indicatorLifeExpectancy: 'Life Expectancy',
                 indicatorInfantMortalityRate: 'Infant Mortality Rate',
                 indicatorAdultMortalityRate: 'Adult Mortality Rate',
@@ -641,25 +1074,25 @@
                 yAxisLabelHygieneRural: 'Access (%)',
                 yAxisLabelHygieneUrban: 'Access (%)',
                 yAxisLabelWash: 'Access (%)',
-                definitionLifeExpectancy: 'Life expectancy at birth indicates the number of years a newborn would live if prevailing patterns of mortality at the time of birth were to stay the same.',
+                definitionLifeExpectancy: 'Life expectancy at birth indicates the number of years a newborn would live if prevailing patterns of mortality at the time of birth were to stay the same throughout their life.',
                 definitionInfantMortalityRate: 'Infant mortality rate is the number of infants dying before reaching one year of age, per 1,000 live births in a given year.',
-                definitionAdultMortalityRate: 'Adult mortality rate is the probability of dying between the ages of 15 and 60, if subject to current age-specific mortality rates.',
+                definitionAdultMortalityRate: 'Adult mortality rate is the probability of dying between the ages of 15 and 60, if subject to current age-specific mortality rates between those ages.',
                 definitionHIVPrevalence: 'Prevalence of HIV refers to the percentage of people ages 15-49 who are infected with HIV.',
-                definitionMortalityRate: 'Mortality rate is the number of deaths per 1,000 individuals per year.',
-                definitionWaterAccess: 'Access to safe drinking water refers to the percentage of the population with access to safely managed drinking water services.',
-                definitionMeaslesVaccination: 'Measles vaccination coverage refers to the percentage of children ages 12-23 months who received the measles vaccine.',
-                definitionHospitalBeds: 'Hospital beds include inpatient beds available in public, private, general, and specialized hospitals, measured per 1,000 people.',
+                definitionMortalityRate: 'Mortality rate is the number of deaths per 1,000 individuals per year in a given population.',
+                definitionWaterAccess: 'Access to safe drinking water refers to the percentage of the population with access to safely managed drinking water services on premises, available when needed and free from contamination.',
+                definitionMeaslesVaccination: 'Measles vaccination coverage refers to the percentage of children ages 12-23 months who received the measles vaccine before 12 months or at any time before the survey.',
+                definitionHospitalBeds: 'Hospital beds include inpatient beds available in public, private, general, and specialized hospitals and rehabilitation centers, measured per 1,000 people.',
                 definitionPhysicians: 'Physicians include generalist and specialist medical doctors, measured per 1,000 people.',
-                definitionHealthAccess: 'Access to health services measures the coverage of essential health services based on an index.',
-                definitionHealthAccessRural: 'Access to health services (rural) measures the coverage of essential health services in rural areas based on an index.',
-                definitionHealthAccessUrban: 'Access to health services (urban) measures the coverage of essential health services in urban areas based on an index.',
-                definitionBirthRate: 'Birth rate refers to the percentage of births attended by skilled health personnel.',
-                definitionMalnutrition: 'Malnutrition prevalence refers to the percentage of children under 5 who are malnourished.',
-                definitionStunting: 'Stunting prevalence refers to the percentage of children under 5 who are stunted (low height-for-age).',
-                definitionBasicSanitation: 'Access to basic sanitation refers to the percentage of the population with access to basic sanitation services.',
-                definitionHygiene: 'Access to hygiene refers to the percentage of the population with access to basic hygiene facilities.',
-                // definitionHygieneRural: 'Access to hygiene (rural) refers to the percentage of the rural population with access to basic hygiene facilities.',
-                // definitionHygieneUrban: 'Access to hygiene (urban) refers to the percentage of the urban population with access to basic hygiene facilities.',
+                definitionHealthAccess: 'Access to health services measures the coverage of essential health services based on tracer interventions that include reproductive, maternal, newborn and child health, infectious diseases, non-communicable diseases and service capacity and access.',
+                definitionHealthAccessRural: 'Access to health services (rural) measures the coverage of essential health services in rural areas based on an index of tracer interventions.',
+                definitionHealthAccessUrban: 'Access to health services (urban) measures the coverage of essential health services in urban areas based on an index of tracer interventions.',
+                definitionBirthRate: 'Birth rate refers to the percentage of births attended by skilled health personnel (generally doctors, nurses, or midwives).',
+                definitionMalnutrition: 'Malnutrition prevalence refers to the percentage of children under 5 whose weight for age is more than two standard deviations below the median for the international reference population.',
+                definitionStunting: 'Stunting prevalence refers to the percentage of children under 5 whose height for age is more than two standard deviations below the median for the international reference population.',
+                definitionBasicSanitation: 'Access to basic sanitation refers to the percentage of the population with access to improved sanitation facilities that are not shared with other households.',
+                definitionHygiene: 'Access to hygiene refers to the percentage of the population with access to a handwashing facility with soap and water available on premises.',
+                definitionHygieneRural: 'Access to hygiene (rural) refers to the percentage of the rural population with access to a handwashing facility with soap and water available on premises.',
+                definitionHygieneUrban: 'Access to hygiene (urban) refers to the percentage of the urban population with access to a handwashing facility with soap and water available on premises.',
                 definitionWash: 'Water, sanitation, and hygiene (WASH) refers to the percentage of the population with access to improved water, sanitation, and hygiene facilities.',
                 categoryAll: 'All',
                 categoryMortality: 'Mortality',
@@ -669,7 +1102,7 @@
                 categoryNutrition: 'Nutrition'
             },
             fr: {
-                sidebarTitle: 'Tableau de bord',
+                sidebarTitle: 'Indicateurs de Santé',
                 indicatorLifeExpectancy: 'Espérance de vie',
                 indicatorInfantMortalityRate: 'Taux de mortalité infantile',
                 indicatorAdultMortalityRate: 'Taux de mortalité adulte',
@@ -687,10 +1120,10 @@
                 indicatorStunting: 'Retard de croissance (%)',
                 indicatorBasicSanitation: 'Accès à l\'assainissement de base (%)',
                 indicatorHygiene: 'Accès à l\'hygiène (%)',
-                // indicatorHygieneRural: 'Accès à l\'hygiène (rural) (%)',
-                // indicatorHygieneUrban: 'Accès à l\'hygiène (urbain) (%)',
+                indicatorHygieneRural: 'Accès à l\'hygiène (rural) (%)',
+                indicatorHygieneUrban: 'Accès à l\'hygiène (urbain) (%)',
                 indicatorWash: 'Eau, assainissement et hygiène (%)',
-                exportButton: 'Exporter en Excel',
+                exportButton: 'Exporter Excel',
                 darkModeButton: 'Mode Sombre',
                 languageButton: 'Langue',
                 dashboardTitle: 'Tableau de bord des indicateurs de santé',
@@ -719,25 +1152,25 @@
                 yAxisLabelHygieneRural: 'Accès (%)',
                 yAxisLabelHygieneUrban: 'Accès (%)',
                 yAxisLabelWash: 'Accès (%)',
-                definitionLifeExpectancy: 'L\'espérance de vie à la naissance indique le nombre d\'années qu\'un nouveau-né vivrait si les modèles de mortalité actuels restaient les mêmes.',
-                definitionInfantMortalityRate: 'Le taux de mortalité infantile est le nombre de nourrissons décédant avant d\'atteindre un an, pour 1 000 naissances vivantes.',
-                definitionAdultMortalityRate: 'Le taux de mortalité adulte est la probabilité de mourir entre 15 et 60 ans, si soumis aux taux de mortalité actuels.',
+                definitionLifeExpectancy: 'L\'espérance de vie à la naissance indique le nombre d\'années qu\'un nouveau-né vivrait si les modèles de mortalité actuels au moment de la naissance restaient les mêmes tout au long de sa vie.',
+                definitionInfantMortalityRate: 'Le taux de mortalité infantile est le nombre de nourrissons décédant avant d\'atteindre un an, pour 1 000 naissances vivantes dans une année donnée.',
+                definitionAdultMortalityRate: 'Le taux de mortalité adulte est la probabilité de mourir entre 15 et 60 ans, si soumis aux taux de mortalité actuels spécifiques à l\'âge entre ces âges.',
                 definitionHIVPrevalence: 'La prévalence du VIH désigne le pourcentage de personnes âgées de 15 à 49 ans infectées par le VIH.',
-                definitionMortalityRate: 'Le taux de mortalité est le nombre de décès pour 1 000 individus par an.',
-                definitionWaterAccess: 'L\'accès à l\'eau potable sûre désigne le pourcentage de la population ayant accès à des services d\'eau potable gérés en toute sécurité.',
-                definitionMeaslesVaccination: 'La couverture vaccinale contre la rougeole désigne le pourcentage d\'enfants âgés de 12 à 23 mois ayant reçu le vaccin contre la rougeole.',
-                definitionHospitalBeds: 'Les lits d\'hôpital incluent les lits pour patients hospitalisés dans les hôpitaux publics, privés, généraux et spécialisés, mesurés pour 1 000 personnes.',
+                definitionMortalityRate: 'Le taux de mortalité est le nombre de décès pour 1 000 individus par an dans une population donnée.',
+                definitionWaterAccess: 'L\'accès à l\'eau potable sûre désigne le pourcentage de la population ayant accès à des services d\'eau potable gérés en toute sécurité sur place, disponibles quand nécessaire et exempts de contamination.',
+                definitionMeaslesVaccination: 'La couverture vaccinale contre la rougeole désigne le pourcentage d\'enfants âgés de 12 à 23 mois ayant reçu le vaccin contre la rougeole avant 12 mois ou à tout moment avant l\'enquête.',
+                definitionHospitalBeds: 'Les lits d\'hôpital incluent les lits pour patients hospitalisés disponibles dans les hôpitaux publics, privés, généraux et spécialisés et les centres de réadaptation, mesurés pour 1 000 personnes.',
                 definitionPhysicians: 'Les médecins incluent les généralistes et spécialistes, mesurés pour 1 000 personnes.',
-                definitionHealthAccess: 'L\'accès aux services de santé mesure la couverture des services de santé essentiels basée sur un indice.',
-                definitionHealthAccessRural: 'L\'accès aux services de santé (rural) mesure la couverture des services de santé essentiels dans les zones rurales basée sur un indice.',
-                definitionHealthAccessUrban: 'L\'accès aux services de santé (urbain) mesure la couverture des services de santé essentiels dans les zones urbaines basée sur un indice.',
-                definitionBirthRate: 'Le taux de natalité désigne le pourcentage de naissances assistées par du personnel de santé qualifié.',
-                definitionMalnutrition: 'La prévalence de la malnutrition désigne le pourcentage d\'enfants de moins de 5 ans souffrant de malnutrition.',
-                definitionStunting: 'La prévalence du retard de croissance désigne le pourcentage d\'enfants de moins de 5 ans présentant un retard de croissance.',
-                definitionBasicSanitation: 'L\'accès à l\'assainissement de base désigne le pourcentage de la population ayant accès à des services d\'assainissement de base.',
-                definitionHygiene: 'L\'accès à l\'hygiène désigne le pourcentage de la population ayant accès à des installations d\'hygiène de base.',
-                // definitionHygieneRural: 'L\'accès à l\'hygiène (rural) désigne le pourcentage de la population rurale ayant accès à des installations d\'hygiène de base.',
-                // definitionHygieneUrban: 'L\'accès à l\'hygiène (urbain) désigne le pourcentage de la population urbaine ayant accès à des installations d\'hygiène de base.',
+                definitionHealthAccess: 'L\'accès aux services de santé mesure la couverture des services de santé essentiels basée sur des interventions traceurs qui incluent la santé reproductive, maternelle, néonatale et infantile, les maladies infectieuses, les maladies non transmissibles et la capacité et l\'accès aux services.',
+                definitionHealthAccessRural: 'L\'accès aux services de santé (rural) mesure la couverture des services de santé essentiels dans les zones rurales basée sur un indice d\'interventions traceurs.',
+                definitionHealthAccessUrban: 'L\'accès aux services de santé (urbain) mesure la couverture des services de santé essentiels dans les zones urbaines basée sur un indice d\'interventions traceurs.',
+                definitionBirthRate: 'Le taux de natalité désigne le pourcentage de naissances assistées par du personnel de santé qualifié (généralement médecins, infirmières ou sages-femmes).',
+                definitionMalnutrition: 'La prévalence de la malnutrition désigne le pourcentage d\'enfants de moins de 5 ans dont le poids par rapport à l\'âge est de plus de deux écarts-types en dessous de la médiane de la population de référence internationale.',
+                definitionStunting: 'La prévalence du retard de croissance désigne le pourcentage d\'enfants de moins de 5 ans dont la taille par rapport à l\'âge est de plus de deux écarts-types en dessous de la médiane de la population de référence internationale.',
+                definitionBasicSanitation: 'L\'accès à l\'assainissement de base désigne le pourcentage de la population ayant accès à des installations d\'assainissement améliorées qui ne sont pas partagées avec d\'autres ménages.',
+                definitionHygiene: 'L\'accès à l\'hygiène désigne le pourcentage de la population ayant accès à une installation de lavage des mains avec du savon et de l\'eau disponibles sur place.',
+                definitionHygieneRural: 'L\'accès à l\'hygiène (rural) désigne le pourcentage de la population rurale ayant accès à une installation de lavage des mains avec du savon et de l\'eau disponibles sur place.',
+                definitionHygieneUrban: 'L\'accès à l\'hygiène (urbain) désigne le pourcentage de la population urbaine ayant accès à une installation de lavage des mains avec du savon et de l\'eau disponibles sur place.',
                 definitionWash: 'L\'eau, l\'assainissement et l\'hygiène (WASH) désignent le pourcentage de la population ayant accès à des installations améliorées d\'eau, d\'assainissement et d\'hygiène.',
                 categoryAll: 'Toutes',
                 categoryMortality: 'Mortalité',
@@ -748,8 +1181,9 @@
             }
         };
 
+        // Configuration des indicateurs avec les vrais fichiers
         const indicators = {
-            'life_expectancy': { file: 'API_SP.DYN.LE00.IN_DS2_en_excel_v2_86009.xls', icon: 'fas fa-heartbeat', category: 'mortality' },
+            'life_expectancy': { file: 'API_SP.DYN.LE00.MA.IN_DS2_en_excel_v2_86009.xls', icon: 'fas fa-heartbeat', category: 'mortality' },
             'infant_mortality_rate': { file: 'API_SP.DYN.CDRT.IN_DS2_en_excel_v2_85364.xls', icon: 'fas fa-baby', category: 'mortality' },
             'adult_mortality_rate': { file: 'API_SP.DYN.AMRT.MA_DS2_en_excel_v2_85977.xls', icon: 'fas fa-user-md', category: 'mortality' },
             'SH.DYN.AIDS.ZS': { file: 'SH.DYN.AIDS.ZS.xlsx', icon: 'fas fa-virus', category: 'mortality' },
@@ -766,10 +1200,13 @@
             'SH.STA.STNT.ZS': { file: 'SH.STA.MMRT.xlsx', icon: 'fas fa-child', category: 'nutrition' },
             'SH.STA.BASS.ZS': { file: 'SH.TBS.INCD.xlsx', icon: 'fas fa-toilet', category: 'hygiene' },
             'SH.STA.HYGN.ZS': { file: 'SH.XPD.CHEX.GD.ZS.xlsx', icon: 'fas fa-hands-wash', category: 'hygiene' },
-            // 'SH.STA.HYGN.RU': { file: 'SH.XPD.CHEX.PC.CD.xlsx', icon: 'fas fa-hands-wash', category: 'hygiene' }
-            // // 'SH.STA.HYGN.UR': { file: 'SP.ADO.TFRT.xlsx', icon: 'fas fa-hands-wash', category: 'hygiene' },
+            'SH.STA.HYGN.RU': { file: 'SH.XPD.CHEX.PC.CD.xlsx', icon: 'fas fa-hands-wash', category: 'hygiene' },
+            'SH.STA.HYGN.UR': { file: 'SP.ADO.TFRT.xlsx', icon: 'fas fa-hands-wash', category: 'hygiene' },
             'SH.STA.WASH.ZS': { file: 'SP.DYN.IMRT.IN.xlsx', icon: 'fas fa-shower', category: 'hygiene' }
         };
+
+        // Fonction pour positionner le tooltip dynamiquement
+
 
         function toggleLanguageDropdown() {
             const dropdown = document.getElementById('language-select');
@@ -819,9 +1256,9 @@
             document.getElementById('indicator-hygiene-rural').textContent = t.indicatorHygieneRural;
             document.getElementById('indicator-hygiene-urban').textContent = t.indicatorHygieneUrban;
             document.getElementById('indicator-wash').textContent = t.indicatorWash;
-            document.getElementById('export-button').innerHTML = `<i class="fas fa-file-export"></i> ${t.exportButton}`;
-            document.getElementById('dark-mode-button').innerHTML = `<i class="fas fa-moon"></i> ${t.darkModeButton}`;
-            document.getElementById('language-button').innerHTML = `<i class="fas fa-globe"></i> ${t.languageButton} <i class="fas fa-chevron-down"></i>`;
+            document.getElementById('export-button').querySelector('span').textContent = t.exportButton;
+            document.getElementById('dark-mode-button').querySelector('span').textContent = t.darkModeButton;
+            document.getElementById('language-button').querySelector('span').textContent = t.languageButton;
             document.getElementById('dashboard-title').textContent = t.dashboardTitle;
             document.getElementById('dashboard-subtitle').textContent = t.dashboardSubtitle;
 
@@ -836,28 +1273,29 @@
             });
         }
 
-        function updateSidebarScroll() {
-            const indicatorList = document.querySelector('.indicator-list');
-            const sidebarHeader = document.querySelector('.sidebar-header');
-            const indicators = document.querySelectorAll('.indicator-list li');
-            const headerHeight = sidebarHeader.offsetHeight;
-            const indicatorHeight = indicators.length > 0 ? indicators[0].offsetHeight : 0;
-            const totalIndicatorsHeight = indicators.length * indicatorHeight;
-            const viewportHeight = window.innerHeight - headerHeight - 40;
+        // Fonction pour mettre à jour l'indicateur sélectionné
+        function updateSelectedIndicator(indicatorKey) {
+            selectedIndicator = indicatorKey;
 
-            if (totalIndicatorsHeight > viewportHeight) {
-                indicatorList.style.overflowY = 'auto';
-            } else {
-                indicatorList.style.overflowY = 'hidden';
+            // Mettre à jour les classes des cartes
+            document.querySelectorAll('.card').forEach(card => {
+                card.classList.remove('selected');
+            });
+
+            const selectedCard = document.getElementById(`card-${indicatorKey}`);
+            if (selectedCard) {
+                selectedCard.classList.add('selected');
             }
         }
 
+        // Fonction de chargement des données avec les vrais fichiers
         async function loadIndicatorData(indicatorKey) {
             const indicator = indicators[indicatorKey];
             const container = document.getElementById('indicators-container');
+
             if (!document.getElementById(`card-${indicatorKey}`)) {
                 const card = document.createElement('div');
-                card.className = 'card fade-in';
+                card.className = `card fade-in ${indicatorKey === selectedIndicator ? 'selected' : ''}`;
                 card.id = `card-${indicatorKey}`;
                 card.innerHTML = `
                     <div class="card-header">
@@ -865,19 +1303,25 @@
                             <h2>${translations[currentLanguage][`indicator${indicatorTranslationKeys[indicatorKey]}`]}</h2>
                             <span class="tooltiptext" id="tooltip-${indicatorKey}">${translations[currentLanguage][`definition${indicatorTranslationKeys[indicatorKey]}`]}</span>
                         </div>
-                        <i class="${indicator.icon} card-icon"></i>
+                        <div class="card-icon">
+                            <i class="${indicator.icon}"></i>
+                        </div>
                     </div>
                     <div class="chart-container">
-                        <canvas id="chart-${indicatorKey}"></canvas>
+                        <div class="loading">Chargement des données...</div>
                     </div>
                     <div class="source-info" id="source-${indicatorKey}">Source: Chargement... | Mise à jour: Chargement...</div>
                 `;
                 container.appendChild(card);
+
+                // Supprimer ces lignes :
+
             }
 
             try {
                 const response = await fetch(indicator.file);
                 if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+
                 const arrayBuffer = await response.arrayBuffer();
                 const workbook = XLSX.read(arrayBuffer, { type: 'array' });
                 const dataSheet = workbook.Sheets['Data'];
@@ -925,11 +1369,17 @@
                 console.error('Error:', error);
                 document.getElementById(`source-${indicatorKey}`).textContent = `Source: Erreur | Mise à jour: N/A`;
                 const card = document.getElementById(`card-${indicatorKey}`);
-                if (card) card.querySelector('.chart-container').innerHTML = `<p>${translations[currentLanguage].indicatorDefinitionError}${error.message}</p>`;
+                if (card) {
+                    const chartContainer = card.querySelector('.chart-container');
+                    chartContainer.innerHTML = `<p style="text-align: center; color: #ef4444; padding: 2rem;">${translations[currentLanguage].indicatorDefinitionError}${error.message}</p>`;
+                }
             }
         }
 
         function updateChart(indicatorKey, years, marocData, menaData, worldData, indicator) {
+            const chartContainer = document.getElementById(`card-${indicatorKey}`).querySelector('.chart-container');
+            chartContainer.innerHTML = '<canvas id="chart-' + indicatorKey + '"></canvas>';
+
             const ctx = document.getElementById(`chart-${indicatorKey}`).getContext('2d');
             if (chartInstances[indicatorKey]) chartInstances[indicatorKey].destroy();
 
@@ -948,41 +1398,41 @@
             if (regionFilter === 'all' || regionFilter === 'morocco') datasets.push({
                 label: currentLanguage === 'fr' ? 'Maroc' : 'Morocco',
                 data: marocData,
-                borderColor: '#1e3a8a',
-                backgroundColor: 'rgba(30, 58, 138, 0.1)',
+                borderColor: '#667eea',
+                backgroundColor: 'rgba(102, 126, 234, 0.1)',
                 borderWidth: 3,
                 fill: true,
                 tension: 0.4,
-                pointRadius: 5,
-                pointBackgroundColor: '#1e3a8a',
+                pointRadius: 6,
+                pointBackgroundColor: '#667eea',
                 pointBorderColor: '#ffffff',
-                pointBorderWidth: 2
+                pointBorderWidth: 3
             });
             if (regionFilter === 'all' || regionFilter === 'mena') datasets.push({
                 label: currentLanguage === 'fr' ? 'Région MENA' : 'MENA Region',
                 data: menaData,
-                borderColor: '#f59e0b',
-                backgroundColor: 'rgba(245, 158, 11, 0.1)',
+                borderColor: '#f5576c',
+                backgroundColor: 'rgba(245, 87, 108, 0.1)',
                 borderWidth: 3,
                 fill: true,
                 tension: 0.4,
-                pointRadius: 5,
-                pointBackgroundColor: '#f59e0b',
+                pointRadius: 6,
+                pointBackgroundColor: '#f5576c',
                 pointBorderColor: '#ffffff',
-                pointBorderWidth: 2
+                pointBorderWidth: 3
             });
             if (regionFilter === 'all' || regionFilter === 'world') datasets.push({
                 label: currentLanguage === 'fr' ? 'Monde' : 'World',
                 data: worldData,
-                borderColor: '#6b7280',
-                backgroundColor: 'rgba(107, 114, 128, 0.1)',
+                borderColor: '#4facfe',
+                backgroundColor: 'rgba(79, 172, 254, 0.1)',
                 borderWidth: 3,
                 fill: true,
                 tension: 0.4,
-                pointRadius: 5,
-                pointBackgroundColor: '#6b7280',
+                pointRadius: 6,
+                pointBackgroundColor: '#4facfe',
                 pointBorderColor: '#ffffff',
-                pointBorderWidth: 2
+                pointBorderWidth: 3
             });
 
             let filteredYears = years;
@@ -1007,7 +1457,7 @@
                     responsive: true,
                     maintainAspectRatio: false,
                     interaction: {
-                        mode: 'index', // Réactive l'interaction par défaut
+                        mode: 'index',
                         intersect: false
                     },
                     plugins: {
@@ -1015,39 +1465,30 @@
                             display: true,
                             text: translations[currentLanguage].chartTitle + translations[currentLanguage][`indicator${indicatorTranslationKeys[indicatorKey]}`],
                             align: 'center',
-                            font: { size: 12, weight: '500' },
-                            color: isDarkMode ? '#e0e0e0' : '#1f2937',
-                            padding: { top: 10, bottom: 10 }
+                            font: { size: 14, weight: '600' },
+                            color: isDarkMode ? '#f1f5f9' : '#1e293b',
+                            padding: { top: 15, bottom: 15 }
                         },
                         legend: {
                             position: 'top',
                             labels: {
-                                font: { size: 9, weight: '500' },
-                                color: isDarkMode ? '#e0e0e0' : '#1f2937',
-                                padding: 10,
+                                font: { size: 11, weight: '500' },
+                                color: isDarkMode ? '#f1f5f9' : '#1e293b',
+                                padding: 15,
                                 usePointStyle: true,
                                 pointStyle: 'circle'
                             }
                         },
                         tooltip: {
-                            enabled: true, // Réactive les tooltips
-                            backgroundColor: 'rgba(0, 0, 0, 0.8)',
-                            titleFont: { size: 10, weight: '600' },
-                            bodyFont: { size: 9 },
-                            padding: 8,
+                            enabled: true,
+                            backgroundColor: 'rgba(15, 23, 42, 0.95)',
+                            titleFont: { size: 12, weight: '600' },
+                            bodyFont: { size: 11 },
+                            padding: 12,
+                            cornerRadius: 8,
                             usePointStyle: true,
                             callbacks: {
                                 label: context => `${context.dataset.label}: ${context.parsed.y ? context.parsed.y.toFixed(2) : 'N/A'}`
-                            }
-                        },
-                        zoom: {
-                            zoom: {
-                                wheel: { enabled: false }, // Désactive le zoom avec la molette
-                                pinch: { enabled: false }, // Désactive le zoom par pincement
-                                mode: 'xy'
-                            },
-                            pan: {
-                                enabled: false // Désactive le panoramique
                             }
                         }
                     },
@@ -1057,31 +1498,37 @@
                             title: {
                                 display: true,
                                 text: translations[currentLanguage][`yAxisLabel${indicatorTranslationKeys[indicatorKey]}`],
-                                font: { size: 10, weight: '500' },
-                                color: isDarkMode ? '#e0e0e0' : '#1f2937'
+                                font: { size: 11, weight: '500' },
+                                color: isDarkMode ? '#f1f5f9' : '#1e293b'
                             },
-                            grid: { color: isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)' },
+                            grid: {
+                                color: isDarkMode ? 'rgba(241, 245, 249, 0.1)' : 'rgba(30, 41, 59, 0.1)',
+                                drawBorder: false
+                            },
                             ticks: {
-                                color: isDarkMode ? '#e0e0e0' : '#555',
-                                font: { size: 9 },
-                                callback: value => value ? value.toFixed(2) : 'N/A'
+                                color: isDarkMode ? '#94a3b8' : '#64748b',
+                                font: { size: 10 },
+                                callback: value => value ? value.toFixed(1) : 'N/A'
                             }
                         },
                         x: {
                             title: {
                                 display: true,
                                 text: translations[currentLanguage].yearLabel,
-                                font: { size: 10, weight: '500' },
-                                color: isDarkMode ? '#e0e0e0' : '#1f2937'
+                                font: { size: 11, weight: '500' },
+                                color: isDarkMode ? '#f1f5f9' : '#1e293b'
                             },
                             grid: { display: false },
                             ticks: {
-                                color: isDarkMode ? '#e0e0e0' : '#555',
-                                font: { size: 9, weight: '500' }
+                                color: isDarkMode ? '#94a3b8' : '#64748b',
+                                font: { size: 10, weight: '500' }
                             }
                         }
                     },
-                    animation: { duration: 800, easing: 'easeOutQuart' }
+                    animation: {
+                        duration: 1000,
+                        easing: 'easeOutQuart'
+                    }
                 }
             });
         }
@@ -1098,13 +1545,19 @@
         function toggleDarkMode() {
             isDarkMode = !isDarkMode;
             document.body.classList.toggle('dark-mode');
+
+            // Mettre à jour l'icône du bouton
+            const darkModeIcon = document.getElementById('dark-mode-button').querySelector('i');
+            darkModeIcon.className = isDarkMode ? 'fas fa-sun' : 'fas fa-moon';
+
             Object.values(chartInstances).forEach(chart => {
-                chart.options.scales.x.ticks.color = isDarkMode ? '#e0e0e0' : '#555';
-                chart.options.scales.y.ticks.color = isDarkMode ? '#e0e0e0' : '#555';
-                chart.options.plugins.legend.labels.color = isDarkMode ? '#e0e0e0' : '#1f2937';
-                chart.options.scales.y.title.color = isDarkMode ? '#e0e0e0' : '#1f2937';
-                chart.options.scales.x.title.color = isDarkMode ? '#e0e0e0' : '#1f2937';
-                chart.options.plugins.title.color = isDarkMode ? '#e0e0e0' : '#1f2937';
+                chart.options.scales.x.ticks.color = isDarkMode ? '#94a3b8' : '#64748b';
+                chart.options.scales.y.ticks.color = isDarkMode ? '#94a3b8' : '#64748b';
+                chart.options.plugins.legend.labels.color = isDarkMode ? '#f1f5f9' : '#1e293b';
+                chart.options.scales.y.title.color = isDarkMode ? '#f1f5f9' : '#1e293b';
+                chart.options.scales.x.title.color = isDarkMode ? '#f1f5f9' : '#1e293b';
+                chart.options.plugins.title.color = isDarkMode ? '#f1f5f9' : '#1e293b';
+                chart.options.scales.y.grid.color = isDarkMode ? 'rgba(241, 245, 249, 0.1)' : 'rgba(30, 41, 59, 0.1)';
                 chart.update();
             });
         }
@@ -1125,24 +1578,56 @@
                 }));
                 XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(wsData), translations[currentLanguage][`indicator${indicatorTranslationKeys[indicatorKey]}`]);
             });
-            XLSX.writeFile(wb, `indicateurs_${new Date().toISOString().split('T')[0]}.xlsx`);
+            XLSX.writeFile(wb, `indicateurs_sante_${new Date().toISOString().split('T')[0]}.xlsx`);
         }
 
+        // Event listeners pour les boutons d'indicateurs - CORRIGÉ
         document.querySelectorAll('.indicator-list li button').forEach(button => {
             button.addEventListener('click', () => {
+                // Mettre à jour les boutons actifs
                 document.querySelectorAll('.indicator-list button').forEach(btn => btn.classList.remove('active'));
                 button.classList.add('active');
+
                 const indicatorKey = button.getAttribute('data-indicator');
+
+                // Mettre à jour l'indicateur sélectionné
+                updateSelectedIndicator(indicatorKey);
+
                 const card = document.getElementById(`card-${indicatorKey}`);
-                if (card) card.scrollIntoView({ behavior: 'smooth' });
+                if (card) {
+                    card.classList.add('highlight');
+                    card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    setTimeout(() => {
+                        card.classList.remove('highlight');
+                    }, 2000);
+                }
             });
         });
 
+        // Fermer le dropdown de langue en cliquant ailleurs
+        document.addEventListener('click', (event) => {
+            const languageDropdown = document.querySelector('.language-dropdown');
+            const languageSelect = document.getElementById('language-select');
+            if (!languageDropdown.contains(event.target)) {
+                languageSelect.style.display = 'none';
+            }
+        });
+
+        // Supprimer cette section :
+
+
+        // Initialisation
         document.addEventListener('DOMContentLoaded', () => {
-            Object.keys(indicators).forEach(indicatorKey => loadIndicatorData(indicatorKey));
+            // Charger les données pour tous les indicateurs
+            Object.keys(indicators).forEach((indicatorKey, index) => {
+                setTimeout(() => {
+                    loadIndicatorData(indicatorKey);
+                }, index * 200); // Délai progressif pour un effet visuel
+            });
+
             updateLanguage();
-            updateSidebarScroll();
-            window.addEventListener('resize', updateSidebarScroll);
+
+            // Animation d'entrée progressive pour les cartes
             setTimeout(() => {
                 const cards = document.querySelectorAll('.card');
                 cards.forEach((card, index) => {
